@@ -18,10 +18,11 @@ Resolving each NID through ps3recomp's NID database gives slot -> name, and
 HLE_ADDR_<X> -> name is the (obvious) table below. Idempotent: rerunning on
 corrected source rewrites the same values.
 """
+import os
 import re, struct, sys
 
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'ps3recomp', 'tools'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                '..', 'ps3recomp', 'tools'))
 from nid_database import get_default_db
 
 ELF = 'input/EBOOT.ELF'
@@ -123,15 +124,6 @@ def main():
         return 0
 
     by_nid = getattr(get_default_db(), '_by_nid')
-    # Older ps3recomp NID databases lack some names the port implements itself
-    # (cellSailPlayerInitialize2, l10n_convert_str, ...). Without a name those
-    # imports never reach the port's handler, so fill gaps from the NIDs that
-    # src/main.cpp registers with ps3_hle_register(_ctx).
-    main_src = open('src/main.cpp', encoding='utf-8', errors='replace').read()
-    for nid_hex, nm in re.findall(
-            r'ps3_hle_register(?:_ctx)?\(0x([0-9A-Fa-f]+)u?,\s*"(\w+)"', main_src):
-        by_nid.setdefault(int(nid_hex, 16), (None, nm))
-
     name_to_slot = {}
     slot_to_nid = {}
     descs = 0

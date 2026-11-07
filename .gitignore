@@ -1,5 +1,6 @@
 # Build output
 build/
+build-linux/
 out/
 
 # Generated recompiled code (large, machine-generated)
@@ -64,17 +65,9 @@ build_*/
 # contains its own build/ and meta/). Not part of the current pipeline.
 project/
 
-# Local run output
-build-clang/
-run-logs/
-shader-cache/
+# build trees and run logs (build-g/, trap.log from a crash run)
+build-*/
+trap.log
 
-# Built launcher and automatic-build work files
-tools/launcher/*.exe
-tools/launcher/*.obj
-.build/
-build.log
-
-# Local saves, trophies and save backups (made from your game, never commit)
-gamedata/
-savedata-backup/
+# CELLMARK_DUMP output
+frame_*.bmp

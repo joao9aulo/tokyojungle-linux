@@ -98,6 +98,12 @@ SELF_KEYS = {
         bytes.fromhex("7D50B8B0F4C4A67721BF80A5C233439304A2D96B4E06EF1A8C0FDB4B3DCA69A0"),
         bytes.fromhex("21D0FDA2CE4F71C04CFE1F2E5CC25B33"),
     ),
+    # Key revision 0x19 (Tokyo Jungle BCAS20219 disc) — from RPCS3 key_vault.cpp
+    # (KEY_APP, revision 0x0019)
+    0x19: (
+        bytes.fromhex("3236B9937174DF1DC12EC2DD8A318A0EA4D3ECDEA5DFB4AC1B8278447000C297"),
+        bytes.fromhex("6153DEE781B8ADDC6A439498B816DC46"),
+    ),
 }
 
 # Fallback: well-known key set for key_rev 0x16, app_type 1
@@ -388,8 +394,10 @@ def decrypt_self(self_data, klicensee=None):
     # --- Step 3: Decrypt certification header + segment certs ---
     # These follow the encryption root header, encrypted with AES-128-CTR
     cert_start = meta_start + 0x40
-    # Read enough for certification header (0x20) + segment entries
-    cert_size = 0x20 + sf.e_phnum * 0x30 + 0x100  # generous overread
+    # Read the whole metadata region: metadata header (0x20) + section headers
+    # (0x30 each) + data keys (key_count * 0x10). The SELF header's se_hsize
+    # bounds it; reading short here truncates the data-key table.
+    cert_size = sf.hdr_size - cert_start
     cert_size = min(cert_size, len(self_data) - cert_start)
 
     enc_cert = self_data[cert_start:cert_start + cert_size]
@@ -418,70 +426,67 @@ def decrypt_self(self_data, klicensee=None):
         print("  Falling back to raw segment extraction...")
         return build_elf_raw(sf, self_data)
 
-    # Segment Certification entries (0x20 each, after cert header at +0x20)
+    # Metadata section headers (0x30 each, after the 0x20 metadata header).
+    # Mirrors RPCS3's MetadataSectionHeader (self/unself.h) exactly:
+    #   data_offset u64, data_size u64, type u32, program_idx u32,
+    #   hashed u32, sha1_idx u32, encrypted u32, key_idx u32, iv_idx u32,
+    #   compressed u32.
     seg_certs = []
-    seg_cert_off = 0x20  # after certification header
     for i in range(section_count):
-        o = seg_cert_off + i * 0x20
+        o = 0x20 + i * 0x30
         sc = {
-            'seg_offset':    be64(dec_cert, o),
-            'seg_size':      be64(dec_cert, o + 8),
-            'comp_type':     be32(dec_cert, o + 16),  # 1=none, 2=zlib
-            'unknown':       be32(dec_cert, o + 20),
-            'enc_type':      be32(dec_cert, o + 24),  # 0=none, 1=AES-128-CTR, 2=unknown
-            'key_idx':       be32(dec_cert, o + 28),
+            'data_offset': be64(dec_cert, o),
+            'data_size':   be64(dec_cert, o + 8),
+            'type':        be32(dec_cert, o + 16),  # 1=ELF, 2=PHDR, 3=SHDR
+            'program_idx': be32(dec_cert, o + 20),
+            'encrypted':   be32(dec_cert, o + 32),  # 3 = AES-128-CTR
+            'key_idx':     be32(dec_cert, o + 36),
+            'iv_idx':      be32(dec_cert, o + 40),
+            'compressed':  be32(dec_cert, o + 44),  # 2 = zlib
         }
         seg_certs.append(sc)
-        enc_name = {0: "plain", 1: "AES-CTR", 2: "enc-2"}.get(sc['enc_type'], f"enc-{sc['enc_type']}")
-        comp_name = {1: "raw", 2: "zlib"}.get(sc['comp_type'], f"comp-{sc['comp_type']}")
-        print(f"    [{i}] offset=0x{sc['seg_offset']:X} size=0x{sc['seg_size']:X} "
-              f"{enc_name} {comp_name} key_idx={sc['key_idx']}")
 
-    # Key table (16 bytes per key, follows segment certs)
-    key_table_off = seg_cert_off + section_count * 0x20
+    # Data keys: key_count * 16 bytes, after the metadata section headers.
+    key_table_off = 0x20 + section_count * 0x30
     keys = []
     for i in range(key_count):
         o = key_table_off + i * 16
-        k = dec_cert[o:o+16]
-        keys.append(k)
-        print(f"    Key[{i}]: {k.hex()}")
+        keys.append(dec_cert[o:o+16])
 
     # --- Step 4: Decrypt segments ---
     print(f"\n  Decrypting segments...")
     decrypted_segments = {}
 
-    for i, sc in enumerate(seg_certs):
-        if i >= len(sf.phdrs):
-            break  # More cert entries than program headers (padding segments)
+    for sc in seg_certs:
+        if sc['type'] != 2:
+            continue  # Only program-header sections carry segment data
 
-        ph = sf.phdrs[i]
+        pidx = sc['program_idx']
+        if pidx >= len(sf.phdrs):
+            continue
+        ph = sf.phdrs[pidx]
         if ph['p_filesz'] == 0:
             continue
 
-        seg_data = self_data[sc['seg_offset']:sc['seg_offset'] + sc['seg_size']]
+        seg_data = self_data[sc['data_offset']:sc['data_offset'] + sc['data_size']]
 
-        if sc['enc_type'] == 1:  # AES-128-CTR encrypted
-            key_idx = sc['key_idx']
-            if key_idx + 1 < len(keys):
-                seg_key = keys[key_idx]
-                seg_iv = keys[key_idx + 1]
-                seg_data = aes_ctr_dec(seg_key, seg_iv, seg_data)
-                print(f"    [{i}] Decrypted 0x{len(seg_data):X} bytes with key[{key_idx}]")
-            else:
-                print(f"    [{i}] WARNING: key_idx {key_idx} out of range")
-        elif sc['enc_type'] == 0:
-            print(f"    [{i}] Plain (no encryption)")
+        if sc['encrypted'] == 3:  # AES-128-CTR encrypted
+            seg_key = keys[sc['key_idx']]
+            seg_iv = keys[sc['iv_idx']]
+            seg_data = aes_ctr_dec(seg_key, seg_iv, seg_data)
+            print(f"    [pidx={pidx}] Decrypted 0x{len(seg_data):X} bytes "
+                  f"(key[{sc['key_idx']}] iv[{sc['iv_idx']}])")
         else:
-            print(f"    [{i}] Unknown encryption type {sc['enc_type']}")
+            print(f"    [pidx={pidx}] Plain (encrypted=0x{sc['encrypted']:X})")
 
-        if sc['comp_type'] == 2:  # zlib compressed
+        if sc['compressed'] == 2:  # zlib compressed
             try:
                 seg_data = zlib.decompress(seg_data)
-                print(f"    [{i}] Decompressed to 0x{len(seg_data):X} bytes")
+                print(f"    [pidx={pidx}] Decompressed to 0x{len(seg_data):X} bytes")
             except zlib.error as e:
-                print(f"    [{i}] WARNING: zlib decompress failed: {e}")
+                print(f"    [pidx={pidx}] WARNING: zlib decompress failed: {e}")
 
-        decrypted_segments[i] = seg_data
+        decrypted_segments[pidx] = seg_data
 
     # --- Step 5: Rebuild ELF ---
     return build_elf(sf, decrypted_segments)
