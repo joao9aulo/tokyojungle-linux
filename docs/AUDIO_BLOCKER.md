@@ -71,3 +71,18 @@ Linux-specific fixes were needed on top of it:
 3. **Font crash** (open): after `cellFontOpenFontset`, a font import dereferences
    a near-NULL pointer (fault 0x0000000B) in `func_0025BD80` (import slot
    0x342464). Next target.
+
+## Follow-up 2: font crash + SPURS bring-up (next frontier)
+
+The ps3recomp `libs/font/cellFont.c` (d7fff845 base) treats its guest-pointer
+arguments as HOST pointers (`fontType->type`), but the HLE dispatch is a
+generic adapter that passes RAW gpr values — so `cellFontOpenFontset` dereferences
+the guest EA directly and SIGSEGVs (fault 0x0000000B). The v0.19.0 cellFont.c
+used `FONT_EA(p) + vm_read32` (guest-EA access) and was correct.
+
+Workaround (not a fix): `TJ_KEEP=cellFont*` keeps the font imports on TJ's own
+stubs (return 0) so the boot continues. With that, the boot reaches the SPURS
+(audio) bring-up — `cellSpursInitializeWithAttribute`, `cellSpursCreateJobChainWithAttribute`,
+`cellSpursRunJobChain`, `cellSpursJobGuardNotify` — then spins in
+`cellSpursJobGuardNotify(guard=0x3)` (unaligned -> CELL_SPURS_JOB_ERROR_ALIGN).
+The job-guard pointer reaching the PPU is 0x3 (corrupted); next target.
