@@ -165,8 +165,10 @@ extern "C" void tj_install_guest_caller(void)
 #include "compat/posix_shim.h"
 #endif
 
-extern "C" const char* g_hle_inflight[];   /* ppu_hle.cpp: in-flight HLE per guest thread */
-extern "C" uint32_t    g_sc_inflight[];   /* ppu_loader.cpp: in-flight lv2 syscall */
+/* The patched ps3recomp drops these in-flight markers; the watchdog falls
+ * back to "(none -- in guest code)". */
+static const char* g_hle_inflight[1] = { 0 };
+static uint32_t    g_sc_inflight[1] = { 0 };
 
 static volatile ppu_context* g_watchdog_ctx = nullptr;
 static HANDLE g_watchdog_main_thread = NULL;

@@ -110,18 +110,10 @@ static inline int __builtin_clzll(unsigned long long x) {
 }
 #endif
 
-/* LV2 syscall dispatch. DECLARED, not included: the runtime's
- * lv2_syscall_table.h defines lv2_syscall as a static inline, and
- * ppu_loader.cpp -- now part of this target -- defines the real one. Pulling
- * the header in here put both in that translation unit. The lifted code only
- * needs the declaration; the loader supplies the body. */
-#ifdef __cplusplus
-extern "C" {
-#endif
-void lv2_syscall(ppu_context* ctx);
-#ifdef __cplusplus
-}
-#endif
+/* LV2 syscall dispatch. The runtime's lv2_syscall_table.h defines
+ * lv2_syscall (as a static inline in the patched ps3recomp); the lifted code
+ * that needs it includes that header. Declaring it here would conflict with
+ * the static inline definition. */
 
 /*
  * Indirect call dispatch.

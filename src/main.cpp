@@ -91,7 +91,6 @@ extern "C" void ppu_register_function(uint64_t, void (*)(ppu_context*));
 extern "C" void ppu_hle_register_all(void);
 extern "C" void ppu_sysprx_register(void);
 extern "C" int  tj_crash_filter(unsigned long code);
-extern "C" void ps3_install_guest_ptr_trap(void);
 extern "C" void tj_start_present_thread(void);
 extern "C" unsigned int ps3_hle_count(void);
 extern "C" void ppu_recomp_register(void);
@@ -165,7 +164,8 @@ int main(int argc, char* argv[])
      *
      * The crash filter flushes, so a fault still shows the tail. */
     static char out_buf[1 << 16], err_buf[1 << 16];
-    ps3_install_guest_ptr_trap();
+    /* v0.19.0 had ps3_install_guest_ptr_trap(); the patched runtime installs
+     * its own fault path, so there is nothing to call here. */
     setvbuf(stdout, out_buf, _IOFBF, sizeof out_buf);
     setvbuf(stderr, err_buf, _IOFBF, sizeof err_buf);
 

@@ -164,6 +164,11 @@ else()
         -Wno-parentheses
         -Wno-unused-but-set-variable
     )
+    # The patched ps3recomp sources compiled into this target (ppu_loader.cpp)
+    # use Win32 names; force-include the port's Win32->POSIX shim.
+    target_compile_options(tokyojungle PRIVATE
+        -include ${CMAKE_SOURCE_DIR}/src/compat/posix_shim.h
+    )
 endif()
 
 # =============================================================================

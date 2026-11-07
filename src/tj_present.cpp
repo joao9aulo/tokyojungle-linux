@@ -58,22 +58,12 @@ static void tj_dump_threads(void)
 }
 
 extern "C" {
-#ifdef _WIN32
 int  rsx_d3d12_backend_init(int width, int height, const char* title);
 void rsx_d3d12_backend_present(void);
 int  rsx_d3d12_backend_pump_messages(void);
 #define TJ_RSX_INIT    rsx_d3d12_backend_init
 #define TJ_RSX_PRESENT rsx_d3d12_backend_present
 #define TJ_RSX_PUMP    rsx_d3d12_backend_pump_messages
-#else
-/* Linux: use ps3recomp's opt-in Vulkan backend (PS3RECOMP_RSX_VULKAN). */
-int  rsx_vulkan_backend_init(int width, int height, const char* title);
-void rsx_vulkan_backend_present(void);
-int  rsx_vulkan_backend_pump_messages(void);
-#define TJ_RSX_INIT    rsx_vulkan_backend_init
-#define TJ_RSX_PRESENT rsx_vulkan_backend_present
-#define TJ_RSX_PUMP    rsx_vulkan_backend_pump_messages
-#endif
 void cellGcmTickVBlank(void);
 void cellGcmTickFlip(void);
 void cellGcm_rsx_process_fifo(void);
