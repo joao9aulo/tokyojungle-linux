@@ -106,3 +106,17 @@ reaching the PPU is 0x3 (near-NULL, unaligned) so it returns
 0x0264A200 (= jc 0x0264A080 + 0x180), so the guest's job-chain/guard pointer is
 being corrupted to 0x3 somewhere in the SPURS job-chain publish/notify path.
 Next target: trace where the guest's `gpr[26]` (= jc + 0x180) becomes 0x3.
+
+## Follow-up 4: main loop blocks on SYS_EVENT_QUEUE_RECEIVE (queue #3)
+
+The soc-job runs (guard reaches zero), then the main thread's job-walk loop at
+`func_0020D6D0` reaches `lv2_syscall` with gpr[11]=130 = `SYS_EVENT_QUEUE_RECEIVE`
+and r3 = queue id 3 (the SPURS dynamic queue, port 16). It blocks there forever
+— the SPU job completion event is never delivered.
+
+`cellSpursDeliverSpuEvent()` (the patch's SPU interrupt-mailbox -> LV2 queue
+forwarder) exists, but it is only triggered when a lifted SPURS job writes its
+outbound mailbox. The soc-job guard reaching zero is PPU-side only
+(cellSpursJobGuardNotify); the SPU-side completion signal (the outbound-mailbox
+event) is what's missing. Next: verify the socjob/dspjob SPU images actually run
+and post their outbound mailbox.

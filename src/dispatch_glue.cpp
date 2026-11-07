@@ -232,7 +232,15 @@ static DWORD WINAPI tj_watchdog_thread(LPVOID)
         ResumeThread(main_th);
 
         uintptr_t off = 0;
-        uint32_t guest = tj_resolve_rip((uintptr_t)hc.Rip, &off);
+        /* Resolve the GUEST CIA (c->cia), not the host RIP (the POSIX shim's
+         * GetThreadContext returns Rip=0, so host resolution was always 0). */
+        uint32_t cia = (uint32_t)c->cia;
+        uint32_t guest = 0;
+        for (uint64_t i = 0; i < function_table_count; i++) {
+            uint32_t a = (uint32_t)function_table[i].addr;
+            if (a && a <= cia && a > guest) guest = a;
+        }
+        off = cia - guest;
         uint64_t calls = g_indirect_call_count;
         uint64_t calls_delta = calls - last_calls;
         last_calls = calls;
