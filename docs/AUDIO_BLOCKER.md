@@ -86,3 +86,23 @@ stubs (return 0) so the boot continues. With that, the boot reaches the SPURS
 `cellSpursRunJobChain`, `cellSpursJobGuardNotify` — then spins in
 `cellSpursJobGuardNotify(guard=0x3)` (unaligned -> CELL_SPURS_JOB_ERROR_ALIGN).
 The job-guard pointer reaching the PPU is 0x3 (corrupted); next target.
+
+## Follow-up 3: SPURS job-guard corruption (guard=0x3)
+
+With `TJ_KEEP=cellFont*`, the boot reaches the real SPURS bring-up and runs the
+first job chain successfully:
+
+```
+[cellSpurs] Initialize "sgx-spurs-" ea=0x00C07500 nSpus=1
+[cellSpurs] CreateJobChainWithAttribute(jc=0x0264A080 ... name="soc-job")
+[cellSpurs] JobGuardInitialize(guard=0x0264A200 jc=0x0264A080 count=1 spus=1 auto=1)
+[cellSpurs] RunJobChain(jc=0x0264A080) run#1
+[cellSpurs] JobGuardNotify(guard=0x0264A200) reached zero
+```
+
+Then the frame loop spins in `cellSpursJobGuardNotify(guard=0x3)` — the guard EA
+reaching the PPU is 0x3 (near-NULL, unaligned) so it returns
+`CELL_SPURS_JOB_ERROR_ALIGN` and the guest retries forever. The valid guard is
+0x0264A200 (= jc 0x0264A080 + 0x180), so the guest's job-chain/guard pointer is
+being corrupted to 0x3 somewhere in the SPURS job-chain publish/notify path.
+Next target: trace where the guest's `gpr[26]` (= jc + 0x180) becomes 0x3.
