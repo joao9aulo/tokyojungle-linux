@@ -49,3 +49,25 @@ The upstream (SilvioDiaz) documents the same wall in `docs/WHERE_IT_STOPS.md`
 Everything up to and including Vulkan rendering + the 12 SPU job images is
 working and committed. Audio output is the remaining hard gate, and it is an
 architectural ps3recomp change, not a game-side patch.
+
+## Follow-up: post-patch Linux fixes (after the patch applied)
+
+Applying the patch fixed the SGX audio (no more `sgxbus tverb`). Three more
+Linux-specific fixes were needed on top of it:
+
+1. **`std::bad_alloc` at boot ctors** — the PPU code was re-lifted with the
+   patched `ppu_lifter.py`, which regenerates `generated/ppu_recomp_*.cpp` and
+   **wipes the post-lift heap redirects**. Re-run `scripts/post_lift.py` after
+   any re-lift (`analyze.py` does this, but a manual `ppu_lifter.py` run does
+   not). Symptom: `exception: bad allocation` right after TLS init.
+
+2. **Flip-wait spin** — the game's wait-for-flip loop (`func_001F18D4` polling
+   `cellGcmGetFlipStatus`) spun forever because the D3D12 presenter is stubbed
+   on Linux, so the flip stayed `WAITING`. Fix in
+   `ps3recomp/libs/video/cellGcmSys.c` (non-Windows): auto-complete a WAITING
+   flip to DONE inside `cellGcmGetFlipStatus`. Runs unpaced until a real Vulkan
+   present lands.
+
+3. **Font crash** (open): after `cellFontOpenFontset`, a font import dereferences
+   a near-NULL pointer (fault 0x0000000B) in `func_0025BD80` (import slot
+   0x342464). Next target.
