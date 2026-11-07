@@ -120,3 +120,28 @@ outbound mailbox. The soc-job guard reaching zero is PPU-side only
 (cellSpursJobGuardNotify); the SPU-side completion signal (the outbound-mailbox
 event) is what's missing. Next: verify the socjob/dspjob SPU images actually run
 and post their outbound mailbox.
+
+## Follow-up 5: SPU jobs now RUN (jc_execute) + AudioOut fixed (GUEST_PTR)
+
+Two more Linux-only fixes:
+
+1. **Job chains never executed on Linux.** `cellSpurs.c` `jc_run_chain()` spawns
+   the async `jc_thread` worker only under `_WIN32`; the `#ifndef _WIN32` path
+   just unlocked and returned without running anything. So the soc-job's SPU
+   code never executed, never posted its outbound mailbox, and
+   `cellSpursDeliverSpuEvent()` never fired → the main loop blocked forever on
+   `SYS_EVENT_QUEUE_RECEIVE(queue #3)`. Fix: call `jc_execute(i)` synchronously
+   in the non-Windows path. Result: `SPU event port=16 ... -> queue=3 rc=0`
+   now flows, and the boot advances past the event-queue wait.
+
+2. **cellAvconfExt host-pointer bug.** `cellAudioOutGetDeviceInfo` and friends
+   dereferenced their out-params as HOST pointers (`info->portType`) while the
+   HLE dispatch passes RAW guest EAs (generic uint64 adapter). SIGSEGV at fault
+   0x0B. Fix: add the v0.19.0 `GUEST_PTR(p,T)` macro (`vm_base + (u32)p`) and map
+   each out-param before use; `cellVideoOutGetGamma` uses `vm_write32` for the
+   byte-swapped float.
+
+Current next blocker: the SGX audio lib (`sgxps3ps3.c:1820`) reports
+`failed to set notify queue (0x23A0)` right after `cellAudioSetNotifyEventQueue`
+is expected to register the queue key, then `failed to DI/EI (0xC07438)` and the
+game tears down (unregister callback, delete SOC job, terminate SPURS).
