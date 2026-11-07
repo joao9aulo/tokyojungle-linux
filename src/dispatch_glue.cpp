@@ -204,7 +204,7 @@ static DWORD WINAPI tj_clock_tick_thread(LPVOID)
     unsigned ms = (e && *e) ? (unsigned)strtoul(e, nullptr, 0) : 0;
     if (!ms) ms = 16;
     for (;;) {
-        uint32_t obj = vm_read32(0x00359220u + 0x1860u);
+        uint32_t obj = vm_read32(0x003591E0u + 0x1860u);
         if (obj) { uint64_t t = vm_read64(obj + 0x18); vm_write64(obj + 0x18, t + 1); }
         Sleep(ms);
     }
@@ -261,12 +261,12 @@ static DWORD WINAPI tj_watchdog_thread(LPVOID)
          * If it never advances, that wait is forever. */
         char timebuf[128] = "";
         if (getenv("TJ_TIMEWATCH")) {
-            uint32_t obj = vm_read32(0x00359220u + 0x1860u);
+            uint32_t obj = vm_read32(0x003591E0u + 0x1860u);
             /* [TOC+0x154C] is the object the VBLANK handler ticks (+0x8/+0x10/
              * +0x14); [TOC+0x1860]+0x18 is the clock the main loop waits on.
              * Printing both says whether the game has any advancing time at
              * all, or just this one field stuck. */
-            uint32_t vb = vm_read32(0x00359220u + 0x154Cu);
+            uint32_t vb = vm_read32(0x003591E0u + 0x154Cu);
             if (obj) snprintf(timebuf, sizeof timebuf,
                               " gameclock[0x%08X]=%llu vbobj=0x%08X vb+0x0=%u vb+0x8=%u vb+0x14=%u",
                               obj + 0x18, (unsigned long long)vm_read64(obj + 0x18),

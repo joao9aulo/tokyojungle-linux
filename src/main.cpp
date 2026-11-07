@@ -96,8 +96,10 @@ extern "C" void tj_start_present_thread(void);
 extern "C" unsigned int ps3_hle_count(void);
 extern "C" void ppu_recomp_register(void);
 extern "C" void ppu_install_thread_trampoline(void);
+extern "C" void tj_spu_register_all(void);   /* lifted SPU job images */
 extern "C" void cellfs_set_root_path(const char* root);
 extern "C" void cellfs_add_path_mapping(const char* ps3_prefix, const char* host_path);
+extern "C" const char* ppu_vfs_root;   /* sys_fs syscall-layer root (ppu_fs.cpp) */
 
 #ifndef _WIN32
 /* Linux fault-commit: guest pages are mapped PROT_NONE and committed on first
@@ -340,6 +342,15 @@ int main(int argc, char* argv[])
         }
         printf("[TJ] VFS root: %s\n", vfs);
         cellfs_set_root_path(vfs);
+        /* The sys_fs (lv2 syscall) layer has its OWN root (ppu_vfs_root,
+         * default ".") independent of cellFs's s_root_path. Without this the
+         * HLE cellFs opens resolve to input/... but the syscall-side opens
+         * (e.g. sys_fs_open of data/lang/JP/strData_JP.pac) resolve to
+         * ./USRDIR/... and miss. Point both halves at the same root. */
+        ppu_vfs_root = vfs;
+        /* sys_fs.c (a third path) adopts PS3_VFS_ROOT lazily; publish the
+         * derived root so it agrees too. */
+        setenv("PS3_VFS_ROOT", vfs, 1);
         /* Map the whole PS3_GAME dir, not just USRDIR: the installer also
          * stats /dev_bdvd/PS3_GAME/ICON0.PNG and friends, and a USRDIR-only
          * mapping sent those to the default gamedata/dev_bdvd/ prefix, where
@@ -372,6 +383,8 @@ int main(int argc, char* argv[])
          * these, so both halves of the split filesystem now agree. */
         cellfs_add_path_mapping("/dev_bdvd/PS3_GAME/", "");
         cellfs_add_path_mapping("/dev_hdd0/game/NPUA80523/", "");
+        /* JP disc: SGX resolves its data root as /dev_hdd0/game/NPJA00075/... */
+        cellfs_add_path_mapping("/dev_hdd0/game/NPJA00075/", "");
         cellfs_add_path_mapping("/app_home/", "");
     /* Point the hdd root at the installed game data -- cellFs joins host paths
      * under the root. The title stats /dev_hdd0 to confirm the device is there
@@ -610,6 +623,12 @@ int main(int argc, char* argv[])
 
     // 4. Register stubs
     tj_stubs::register_overrides();
+
+    // 4b. Register the lifted SPU job images (generated/spu_lifted/*). The
+    // SPURS dispatcher matches a guest image by fingerprint and runs the
+    // lifted entry; without this every SPU job logs "dispatch MISS" and the
+    // SGX audio graph never advances.
+    tj_spu_register_all();
 
     // 4b. Install guest_caller hook so HLE bridges (cellSysutilCheckCallback,
     // cellGcm vblank/flip handlers, save-data completion) can dispatch back

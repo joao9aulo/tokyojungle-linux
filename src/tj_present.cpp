@@ -58,9 +58,22 @@ static void tj_dump_threads(void)
 }
 
 extern "C" {
+#ifdef _WIN32
 int  rsx_d3d12_backend_init(int width, int height, const char* title);
 void rsx_d3d12_backend_present(void);
 int  rsx_d3d12_backend_pump_messages(void);
+#define TJ_RSX_INIT    rsx_d3d12_backend_init
+#define TJ_RSX_PRESENT rsx_d3d12_backend_present
+#define TJ_RSX_PUMP    rsx_d3d12_backend_pump_messages
+#else
+/* Linux: use ps3recomp's opt-in Vulkan backend (PS3RECOMP_RSX_VULKAN). */
+int  rsx_vulkan_backend_init(int width, int height, const char* title);
+void rsx_vulkan_backend_present(void);
+int  rsx_vulkan_backend_pump_messages(void);
+#define TJ_RSX_INIT    rsx_vulkan_backend_init
+#define TJ_RSX_PRESENT rsx_vulkan_backend_present
+#define TJ_RSX_PUMP    rsx_vulkan_backend_pump_messages
+#endif
 void cellGcmTickVBlank(void);
 void cellGcmTickFlip(void);
 void cellGcm_rsx_process_fifo(void);
@@ -72,7 +85,7 @@ static DWORD WINAPI tj_present_thread(LPVOID)
     const char* title = getenv("PS3_TITLE");
     if (!title || !*title) title = "Tokyo Jungle (ps3recomp)";
 
-    int rsx_ok = (rsx_d3d12_backend_init(1280, 720, title) == 0);
+    int rsx_ok = (TJ_RSX_INIT(1280, 720, title) == 0);
     fprintf(stderr, "[rsx] backend init %s\n",
             rsx_ok ? "OK -- window open" : "FAILED");
 
@@ -102,7 +115,7 @@ static DWORD WINAPI tj_present_thread(LPVOID)
             cellGcmTickVBlank();
             cellGcmTickFlip();
             if (rsx_ok && cellGcm_take_flip_pending())
-                rsx_d3d12_backend_present();
+                TJ_RSX_PRESENT();
             if (rsx_ok)
                 cellGcm_rsx_process_fifo();
             next_tick += 16;          /* ~60 Hz */
@@ -118,9 +131,9 @@ static DWORD WINAPI tj_present_thread(LPVOID)
 
         if (rsx_ok) {
             if (cellGcm_take_flip_pending())
-                rsx_d3d12_backend_present();
+                TJ_RSX_PRESENT();
             cellGcm_rsx_process_fifo();
-            if (rsx_d3d12_backend_pump_messages() != 0)
+            if (TJ_RSX_PUMP() != 0)
                 rsx_ok = 0;           /* window closed */
         }
     }

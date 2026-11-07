@@ -71,3 +71,4 @@ trap.log
 
 # CELLMARK_DUMP output
 frame_*.bmp
+.pandacode/
