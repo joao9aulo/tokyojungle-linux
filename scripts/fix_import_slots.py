@@ -28,7 +28,9 @@ from nid_database import get_default_db
 ELF = 'input/EBOOT.ELF'
 SRC = 'src/hle_imports.h'
 DESC_MAGIC = 0x2C000001
-NAME_LO, NAME_HI = 0x0025FD20, 0x0025FE9C
+# JP (BCAS20219) module name table lives at ~0x25E2A4..0x25E410 (the NA build
+# used 0x25FD20..0x25FE9C).
+NAME_LO, NAME_HI = 0x0025E2A0, 0x0025E420
 
 # HLE_ADDR_<suffix> -> the library function it implements.
 HANDLERS = {

@@ -55,6 +55,7 @@ HEAP_PATCHES = {
     # from TOC+0x29E8 and calls the mspace_* core.
     "0024C360": ("tj_heap_malloc",   "malloc"),
     "0024C25C": ("tj_heap_free",     "free"),
+    "0024C334": ("tj_heap_free",     "free (second entry point)"),
     "0024C28C": ("tj_heap_realloc",  "realloc"),
     "0024C2C4": ("tj_heap_memalign", "memalign"),
 }
