@@ -145,3 +145,22 @@ Current next blocker: the SGX audio lib (`sgxps3ps3.c:1820`) reports
 `failed to set notify queue (0x23A0)` right after `cellAudioSetNotifyEventQueue`
 is expected to register the queue key, then `failed to DI/EI (0xC07438)` and the
 game tears down (unregister callback, delete SOC job, terminate SPURS).
+
+## Follow-up 6: SGX "set notify queue" = NULL function-pointer call
+
+Traced the failure with `PS3_HLE_TRACE` + `YDKJ_SCTRACE` + `PS3_CALLTRACE`:
+
+- `cellAudioSetNotifyEventQueue` (NID 0x377E0CD9) is NEVER reached (no HLETRACE
+  for it).
+- The syscall right after `queue_create(key=0x23A0)` is just `SYS_TTY_WRITE`
+  (the error print) — so "set notify queue" is a DIRECT guest call, not an
+  import/syscall.
+- `PS3_CALLTRACE` shows the failure is a sequence of `[CALL] -> 0x00000000`
+  (indirect call to a NULL function pointer, r3=0x00C0D138). The runtime's
+  NULL-ctr sentinel just returns, leaving r3 non-zero, so the game prints
+  "failed" and tears down.
+
+So the SGX audio lib's API function-pointer (its notify-queue hook, or the
+import OPD for cellAudioSetNotifyEventQueue at slot 0x3423EC) is NULL at that
+point. Next: find why that pointer is NULL (import slot not resolved, or the
+SGX API table not populated during its init).
