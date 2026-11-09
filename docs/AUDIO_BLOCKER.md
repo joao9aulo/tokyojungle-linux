@@ -191,3 +191,17 @@ Result: the game now OPENS AND READS the actual music banks —
 sgx-audio thread runs. Next blocker: the main thread blocks in
 `cellSpursEventFlagWait(flagEA=0x005F7400 pattern=0x1)` forever — the SPU job
 completion event flag is never set.
+
+## Follow-up 8: 3 more SPU job images captured + lifted; boot reaches the GCM render loop
+
+The 2nd SPURS instance dispatches THREE more job images that were never
+captured: 0x78FEA84E1C23BB5C (6.3KB), 0xD8945A0BA2D3D054 (40KB) and
+0xDD6F7BFDDFCF7894 (48KB). Captured with SPU_DUMP_MISS, lifted with the patched
+spu_lifter.py (images 13/14/15 in spu_workloads.c). Also simulated the SPU
+kernel "ready" event-flag (bit 0 set at EventFlagAttachLv2EventQueue, non-Windows).
+
+Result: no more dispatch MISSes; the sgx-audio threads run; ALL the sound banks
+load (static.sgd, tj_bus.sgd, 20_tj_result.sgd, 05_tj_stage02.sgd); the save-data
+auto-load check runs. The boot now reaches the RENDER LOOP: the main thread
+spins on GCM control register 0x03002008 (=0) waiting for the RSX pump — the
+graphics frontier (D3D12 stub -> needs a real present/Vulkan).

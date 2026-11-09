@@ -32,6 +32,12 @@ extern void tj_jd58063cdspu_func_00000000(spu_context*);
 extern void tj_jd58063cdspu_recomp_register(void);
 extern void tj_jfe031af6spu_func_00000000(spu_context*);
 extern void tj_jfe031af6spu_recomp_register(void);
+extern void tj_j78fea84espu_func_00000000(spu_context*);
+extern void tj_j78fea84espu_recomp_register(void);
+extern void tj_jd8945a0bspu_func_00000000(spu_context*);
+extern void tj_jd8945a0bspu_recomp_register(void);
+extern void tj_jdd6f7bfdspu_func_00000000(spu_context*);
+extern void tj_jdd6f7bfdspu_recomp_register(void);
 
 void tj_spu_register_all(void)
 {
@@ -82,6 +88,18 @@ void tj_spu_register_all(void)
     spu_begin_image(12);
     tj_jfe031af6spu_recomp_register();
     spu_workload_register_img(0xFE031AF67ED048DEULL, tj_jfe031af6spu_func_00000000, 12, "jfe031af6");
+
+    spu_begin_image(13);
+    tj_j78fea84espu_recomp_register();
+    spu_workload_register_img(0x78FEA84E1C23BB5CULL, tj_j78fea84espu_func_00000000, 13, "j78fea84e");
+
+    spu_begin_image(14);
+    tj_jd8945a0bspu_recomp_register();
+    spu_workload_register_img(0xD8945A0BA2D3D054ULL, tj_jd8945a0bspu_func_00000000, 14, "jd8945a0b");
+
+    spu_begin_image(15);
+    tj_jdd6f7bfdspu_recomp_register();
+    spu_workload_register_img(0xDD6F7BFDDFCF7894ULL, tj_jdd6f7bfdspu_func_00000000, 15, "jdd6f7bfd");
 
 }
 
