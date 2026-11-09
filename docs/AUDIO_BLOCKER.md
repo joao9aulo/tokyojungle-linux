@@ -205,3 +205,19 @@ load (static.sgd, tj_bus.sgd, 20_tj_result.sgd, 05_tj_stage02.sgd); the save-dat
 auto-load check runs. The boot now reaches the RENDER LOOP: the main thread
 spins on GCM control register 0x03002008 (=0) waiting for the RSX pump — the
 graphics frontier (D3D12 stub -> needs a real present/Vulkan).
+
+## Follow-up 9: boot reaches the RENDER LOOP (GCM fence wait)
+
+Made the RSX FIFO pump (`cellGcm_rsx_process_fifo`) unconditional in
+tj_present.cpp (it was gated behind `rsx_ok`, which is 0 because the D3D12
+backend is stubbed). The audio side is now fully up: all sound banks load, the
+sgx-audio threads run, the SPU jobs (15 images) dispatch.
+
+The main thread now sits in the game's render loop spinning on GCM control
+register 0x03002008 (the REF/fence register) = 0. The fence queue is empty:
+`gcm_ref_push_at` fills it only when the FIFO drain consumes SET_REFERENCE
+commands, and the drain has nothing to consume yet. This is the GRAPHICS
+frontier: the guest must be able to write its command buffer and have the RSX
+walk it — with the D3D12 renderer stubbed, the geometry never executes. Next
+big piece: a real present/renderer (Vulkan) or at minimum a stub that walks
+the FIFO and publishes fences.

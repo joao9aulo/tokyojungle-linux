@@ -106,8 +106,7 @@ static DWORD WINAPI tj_present_thread(LPVOID)
             cellGcmTickFlip();
             if (rsx_ok && cellGcm_take_flip_pending())
                 TJ_RSX_PRESENT();
-            if (rsx_ok)
-                cellGcm_rsx_process_fifo();
+            cellGcm_rsx_process_fifo();
             next_tick += 16;          /* ~60 Hz */
             fired++;
         }
@@ -122,10 +121,10 @@ static DWORD WINAPI tj_present_thread(LPVOID)
         if (rsx_ok) {
             if (cellGcm_take_flip_pending())
                 TJ_RSX_PRESENT();
-            cellGcm_rsx_process_fifo();
             if (TJ_RSX_PUMP() != 0)
                 rsx_ok = 0;           /* window closed */
         }
+        cellGcm_rsx_process_fifo();
     }
 }
 
