@@ -427,3 +427,13 @@ cellFontRenderSurfaceInit (TJ stub returns 0 without initializing the game's
 render surface descriptor), so the glyph blits copy from an unset buffer.
 Next: implement cellFontRenderSurfaceInit (write the game's surface fields)
 so the glyph -> surface -> blit -> display chain completes.
+
+## Follow-up 26: the glyph surface descriptor is never initialized
+
+RenderGlyph's diagnostic: the game's surface (0xD00FF818) has buf=0 and
+garbage dims -- cellFontRenderSurfaceInit is still the TJ stub, so the game's
+surface descriptor is never filled and the glyph blit has no buffer. The
+game calls it with (surface, 0, 0x40, 1) and (renderer, 0xA8A8FA0, 0x1E00, 4)
+-- two call shapes, so the real SDK signature needs to be matched. Next:
+implement cellFontRenderSurfaceInit (fill buf/widthByte/pixelSizeByte/
+width/height in the guest surface) for both call shapes.
