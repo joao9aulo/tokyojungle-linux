@@ -357,3 +357,14 @@ screens. The dumped frame is the game's actual rendered frame (uniform white,
 glyphs still missing because cellFont is stubbed). This is the first time the
 port produces real pixels from the game's command stream. Next: software
 NV0039 blits + real cellFont glyphs to get the title text visible.
+
+## Follow-up 20: REAL cellFont (no more TJ_KEEP) + software frame pipeline
+
+Ported the guest-EA conversion to cellFont.c (GUEST_PTR + vm_read/vm_write for
+the font/fontType/layout/metrics/surface/image fields), added the 5 missing
+NID-table entries (cellFontOpenFontInstance/SetScalePoint/SetResolutionDpi/
+GetCharGlyphMetrics/GetFontIdCode), and added the GUEST_PTR macro to
+ppu_memory.h. The game now runs WITHOUT TJ_KEEP=cellFont*: cellFontOpenFontset
+(type 0x100) executes, the glyph rendering path is guest-EA-safe, no crash.
+The glyphs go into the game's font surface; the last step for visible text is
+the draw/blit from that surface to the framebuffer (still stubbed).
