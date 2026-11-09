@@ -378,3 +378,16 @@ NV4097 draw calls (s_backend->draw_arrays = NULL on Linux) never rasterize the
 glyph quads into the display buffer. Remaining for visible text: a software
 draw_arrays (textured quads from the game's vertex stream + the font surface),
 or at minimum a surface-to-display copy for the game's UI plane.
+
+## Follow-up 22: real TTF glyph pipeline (lazy init + host fallback + renderer fix)
+
+The game's font init goes through the FreeType-style entries (never the plain
+cellFontInit), so s_font_initialized stayed 0 and OpenFontset bailed early
+(empty glyphs). Fixes: lazy font init in OpenFontset, a host TTF fallback
+(DejaVuSans, 759720 bytes -> stb_valid), and vm_write32 for the
+cellFontCreateRenderer out-param (was *renderer = i on a guest EA -> SIGSEGV).
+No crash now; the glyph path is live. The glyphs land in the game's font
+surface, but the frame is still uniform white: the game's NV4097 draws
+(textured quads) are the stubbed s_backend and never rasterize. Next: the
+software draw_arrays rasterizer (positions/UVs from the immediate vertex
+decode + the tex0 surface) to composite the text onto the display buffer.
