@@ -221,3 +221,18 @@ frontier: the guest must be able to write its command buffer and have the RSX
 walk it — with the D3D12 renderer stubbed, the geometry never executes. Next
 big piece: a real present/renderer (Vulkan) or at minimum a stub that walks
 the FIFO and publishes fences.
+
+## Follow-up 10: REF hack gets the render loop RUNNING (fonts + DLC load)
+
+The game's gcmFinish-style spin (func_001F734C: polls ctrl->ref 0x03002008,
+usleep(30)) never terminates because the game's FIFO carries no SET_REFERENCE
+(method 0x50) the drain can publish. Hack (TJ_REF_HACK=1): sys_timer_usleep
+detects the spin's usleep(30) (lr 0x001F7384/0x001F739C) and writes the
+expected fence (gpr[31]) straight to ctrl->ref.
+
+Result: the render loop advances — fences 1..7+ publish, PFontThread runs,
+DLC edats are probed (dlc0008..dlc1008), fonts bind/render/close. Remaining
+stall: the FIFO ring can't recycle — drain GET sits at 0x12288 on a bind
+(SET_OBJECT, count=0) and the packet walker's `remaining = count` convention
+appears off-by-one for the 1-data-word bind, so the object handle is never
+consumed. That's the next FIFO-walker fix.
