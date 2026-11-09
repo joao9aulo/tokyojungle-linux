@@ -508,3 +508,14 @@ side is confirmed live (0xCA369180 filled by the PFont). Remaining for the
 visible title text: execute the game's DMA uploads (the inline data -> VRAM
 copies the walker currently records as GCM2D inline writes) so the vertex
 buffers populate, then the rasterizer's atlas sampling composites the text.
+
+## Follow-up 33: the game's UI vertices ARE uploaded (double-buffered)
+
+Dumping the 0x0204A00 region shows the game's float data IS there (0.008,
+16.375, 19.750... -- UI coordinates): the game uploads its vertex data, but
+into a ROTATING buffer while the draw's attrib offset (0x474C0) reads the
+stale previous buffer, so the rasterizer sees zeros. The text pipeline is
+therefore complete: PFont -> atlas (live) + the game's UI vertices (live) +
+the DRAW_ARRAYS (hooked). The last two links are: resolve the draw's VA to
+the game's current buffer (the base-offset rotation) and sample the atlas in
+the rasterizer. Both are bounded renderer work.
