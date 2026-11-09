@@ -474,3 +474,14 @@ game's text strings into that atlas. This closes the port-infrastructure work:
 boot, audio init, saves, render loop, clears, blits, rasterizer and font APIs
 are all live; the remaining pieces are the game-specific text/graphics
 content.
+
+## Follow-up 30: 65k+ UI draws; the atlas lives in the VRAM (0xCA369180)
+
+The tex0 offset 0xA369180 resolves (fmt&3 == 1) to the local memory
+0xCA369180 -- the game's 64x64 font atlas. Neither the main-memory nor the
+VRAM region receives vm_write32 stores, so the game populates the atlas
+through its PFont thread via another path (DMA/memcpy/SPU). The game also
+runs 65k+ DRAW_ARRAYS with placeholder vertices (x=0.5/y=0.5, black) and its
+own inline GCM2D writes to the UI surface 0xC0AE0700 -- the real title-screen
+content is the game's own UI pipeline. Port infrastructure is complete; the
+remaining work is game-content reverse engineering (PFont atlas fill).
