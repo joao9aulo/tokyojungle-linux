@@ -304,3 +304,15 @@ Result: the walker crosses the semaphores and reaches the ring tail
 ring end (word at get = 0x200104E0, type 1 — the game's ring-wrap marker or a
 misread header). Next: handle the ring tail marker (the game's own wrap word)
 or bound the packet at the context end.
+
+## Follow-up 16: walker reaches the game's inline draw blobs (deep in the stream)
+
+After the semaphore consume, the walker crosses into the game's inline draw
+data: large method packets (576-word blobs of embedded method headers, e.g.
+0x00040064 = the semaphore-offset method) inside CALL subroutines. The walker
+now stalls at the game's PUT (get==put, mid-packet) while the game waits for
+the ring to drain: the game writes its inline command blobs incrementally and
+the walker's packet needs the rest of the blob before the PUT advances.
+Remaining work is the blob/ring handshake: treat a packet whose data crosses
+the live PUT as complete (flush the partial packet) or drain the blob in
+lockstep with the game's writes.
