@@ -368,3 +368,13 @@ ppu_memory.h. The game now runs WITHOUT TJ_KEEP=cellFont*: cellFontOpenFontset
 (type 0x100) executes, the glyph rendering path is guest-EA-safe, no crash.
 The glyphs go into the game's font surface; the last step for visible text is
 the draw/blit from that surface to the framebuffer (still stubbed).
+
+## Follow-up 21: 2D blits (m2mf/scaled) confirmed live; draws are the last gap
+
+The NV0039 m2mf and NV3089 scaled blits already execute (guest-EA aware), and
+the game's inline GCM2D writes land in the local memory (0xC0AE0700 region --
+the game's UI surfaces). The frame is still uniform white because the
+NV4097 draw calls (s_backend->draw_arrays = NULL on Linux) never rasterize the
+glyph quads into the display buffer. Remaining for visible text: a software
+draw_arrays (textured quads from the game's vertex stream + the font surface),
+or at minimum a surface-to-display copy for the game's UI plane.
