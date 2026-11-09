@@ -316,3 +316,16 @@ the walker's packet needs the rest of the blob before the PUT advances.
 Remaining work is the blob/ring handshake: treat a packet whose data crosses
 the live PUT as complete (flush the partial packet) or drain the blob in
 lockstep with the game's writes.
+
+## Follow-up 17: count = num_data (reverted count+1); PUT advances to 0x18AA4
+
+The game's method count is num_data (verified against its semaphore methods);
+the count+1 over-consumed and misread the inline blobs. Reverted to
+`remaining = count` with SET_OBJECT (method 0) special-cased to consume its
+one handle word. The PUT now advances far (0x18AA4+), CALLs recover cleanly
+from unmapped targets (0x1ECCCCCC, 0x1F333330), and the game-label semaphores
+consume. Current stall: a VALID NV406E ACQUIRE (dma=0x66616661, offset=0x400)
+waits for label 0x03000400 == 1, actual 0. The label is libgcm's reserved flip
+semaphore -- the game's PPU side (cellGcmSetLabel / flip path) should publish
+1. Next: make the PPU-side label writes reach 0x03000400 (or satisfy the
+ACQUIRE when the backend is a stub).
