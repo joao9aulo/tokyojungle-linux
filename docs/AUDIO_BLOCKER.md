@@ -450,3 +450,14 @@ the game allocates it itself and writes the descriptor's buffer field later;
 until then the glyph blit has no source. Next: watch who writes the 0xD00FF818
 descriptor's buffer field (the game's own alloc), or route the glyph rendering
 into the game's 1920x24 surface.
+
+## Follow-up 28: glyph scratch buffer allocated in VRAM (0xC2000000)
+
+cellFontRenderSurfaceInit now allocates a guest-VRAM buffer when the game
+passes NULL (the 64x64 A8 glyph scratch now has buf=0xC2000000), so
+cellFontRenderCharGlyphImage renders the glyphs for real. The frame is still
+the white + the rasterizer's black band: the glyphs land in 0xC2000000 but the
+game's own atlas (tex0 off=0xA369180) is a separate surface -- the game copies
+scratch->atlas in its own code path. Next: verify the glyph bytes at
+0xC2000000 and follow the game's scratch->atlas copy, or point the draw's tex0
+sampling at the scratch buffer.
