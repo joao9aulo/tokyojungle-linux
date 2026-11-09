@@ -329,3 +329,15 @@ waits for label 0x03000400 == 1, actual 0. The label is libgcm's reserved flip
 semaphore -- the game's PPU side (cellGcmSetLabel / flip path) should publish
 1. Next: make the PPU-side label writes reach 0x03000400 (or satisfy the
 ACQUIRE when the backend is a stub).
+
+## Follow-up 18: title-screen LOGIC runs (text glyphs, saves, trophies)
+
+The ACQUIRE satisfaction (publish the expected label after the bounded wait)
+unblocked the flip sync. The walker now runs the render loop continuously:
+2000+ unmapped-CALL recoveries, PUT-rewind resyncs, and the game advances
+through: save data LOAD (BCJS30069-AUTO-, SYS-DATA 228832 bytes), the trophy
+context, all the DLC probes, and then the TITLE SCREEN text rendering --
+PFontThread + font glyph calls with Shift-JIS character codes (0x7A7A, 0x306E,
+0x3082...) via the TJ_KEEP stubs (no glyph pixels yet, but the game's title
+logic is executing). No faults. Next: real font glyphs (cellFont render
+path), then a present/renderer to show the frame.
