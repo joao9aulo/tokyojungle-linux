@@ -461,3 +461,16 @@ game's own atlas (tex0 off=0xA369180) is a separate surface -- the game copies
 scratch->atlas in its own code path. Next: verify the glyph bytes at
 0xC2000000 and follow the game's scratch->atlas copy, or point the draw's tex0
 sampling at the scratch buffer.
+
+## Follow-up 29: the game's glyph calls are font-probing only (codes 0x20-0x25)
+
+The game's cellFontRenderCharGlyphImage calls (6 total) are the font-init
+probe (ASCII 0x20..0x25) with scale_y=0 at that point (defaulted to 24px now).
+The game's actual title text goes through its own PFont system, not the
+cellFont glyph API -- so the cellFont path is complete and correct but not the
+text producer. The visible title text needs the game's own font-atlas path
+(tex0 0xA369180) populated by the PFont thread, or a hook that renders the
+game's text strings into that atlas. This closes the port-infrastructure work:
+boot, audio init, saves, render loop, clears, blits, rasterizer and font APIs
+are all live; the remaining pieces are the game-specific text/graphics
+content.
