@@ -164,3 +164,30 @@ So the SGX audio lib's API function-pointer (its notify-queue hook, or the
 import OPD for cellAudioSetNotifyEventQueue at slot 0x3423EC) is NULL at that
 point. Next: find why that pointer is NULL (import slot not resolved, or the
 SGX API table not populated during its init).
+
+## Follow-up 7: audio graph now LOADS the sound banks
+
+Four more root-cause fixes (all the same host-pointer/guest-EA family):
+
+1. **Audio port buffer collided with the HLE OPD area.** `AUDIO_GUEST_DEFAULT_BASE`
+   was 0x01000000 = HLE_OPD_BASE; `cellAudioPortOpen`'s buffer memset wiped every
+   import OPD mid-boot (cellAudioSetNotifyEventQueue's OPD fn went 0x011802DC ->
+   0). Moved to 0x01400000. The SGX "set notify queue" / DI / EI failures
+   disappeared and the sgx-audio thread starts.
+
+2. **cellSail host-pointer bug** (cellSailMemAllocatorInitialize/GetState/
+   GetStreamNum): added GUEST_PTR mapping.
+
+3. **cellFs host-pointer bug**: the whole cellFs.c treated guest paths as host
+   strings (`printf %s`, `strncmp` on raw EA) and out-params as host pointers.
+   Added gpath()/gptr() and mapped path/fd/sb/buf/pos/entries.
+
+4. **cellFs bare device root**: `/dev_hdd0` never matched its own `/dev_hdd0/`
+   mapping, so the game's "stat the device" looped forever; accept the prefix
+   with the trailing slash removed.
+
+Result: the game now OPENS AND READS the actual music banks —
+`data/snd/static.sgd`, `20_tj_result.sgd`, `05_tj_stage02.sgd` — and the
+sgx-audio thread runs. Next blocker: the main thread blocks in
+`cellSpursEventFlagWait(flagEA=0x005F7400 pattern=0x1)` forever — the SPU job
+completion event flag is never set.
