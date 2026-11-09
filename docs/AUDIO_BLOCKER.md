@@ -437,3 +437,16 @@ game calls it with (surface, 0, 0x40, 1) and (renderer, 0xA8A8FA0, 0x1E00, 4)
 -- two call shapes, so the real SDK signature needs to be matched. Next:
 implement cellFontRenderSurfaceInit (fill buf/widthByte/pixelSizeByte/
 width/height in the guest surface) for both call shapes.
+
+## Follow-up 27: RenderSurfaceInit implemented; rasterizer produces visible pixels
+
+Registered cellFontRenderSurfaceInit (0x90B9465E) in the NID table and
+implemented it: (surface, buffer, bufferWidthByte, pixelSizeByte, width,
+height) -- the game's two surfaces now decode correctly: a 64x64 A8 glyph
+surface (buf=0) and a 1920x24 RGBA surface (buf=0xA8A8FA0). The software
+rasterizer also started producing visible output (a black band at y=0-1 from
+the game's still-garbage UI vertices). The glyph surface's buffer is NULL --
+the game allocates it itself and writes the descriptor's buffer field later;
+until then the glyph blit has no source. Next: watch who writes the 0xD00FF818
+descriptor's buffer field (the game's own alloc), or route the glyph rendering
+into the game's 1920x24 surface.
