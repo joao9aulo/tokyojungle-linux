@@ -236,3 +236,13 @@ stall: the FIFO ring can't recycle — drain GET sits at 0x12288 on a bind
 (SET_OBJECT, count=0) and the packet walker's `remaining = count` convention
 appears off-by-one for the 1-data-word bind, so the object handle is never
 consumed. That's the next FIFO-walker fix.
+
+## Follow-up 11: render loop runs; FIFO walker drifts into the io-0 header region
+
+With TJ_REF_HACK the fences keep publishing (refs 1..8+ observed) and the game
+keeps rendering: fonts bind/unbind/close, DLC probing, ring recycle callbacks.
+The walker's remaining problem: its GET starts at io offset 0 and treats the
+ring's header word (0x00000001 at io 0, then zero padding) as SET_OBJECT binds,
+so it drifts into unmapped io (recoveries "GET 0x14766570/0x1F333330 unmapped;
+skipped to CALL/PUT"). Next: start the walker at the game's real ring base and
+handle the ring tail JUMP so the walker stays inside the ring lap.

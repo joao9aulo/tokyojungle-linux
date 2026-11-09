@@ -468,6 +468,23 @@ int main(int argc, char* argv[])
                                   g_hle_dispatch[i].handler);
     }
 
+    /* Boot diagnostic: verify a few import slots were actually resolved to
+     * OPDs whose func pointer is the generic stub (not 0). */
+    if (getenv("TJ_IMPORT_CHECK")) {
+        extern uint8_t* vm_base;
+        auto rd32 = [](uint32_t ea) {
+            const uint8_t* p = vm_base + ea;
+            return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) |
+                   ((uint32_t)p[2] << 8) | (uint32_t)p[3];
+        };
+        for (uint32_t slot = 0x3423E8; slot <= 0x3423F4; slot += 4) {
+            uint32_t opd = rd32(slot);
+            uint32_t fn = opd ? rd32(opd) : 0;
+            printf("[IMPCHECK] slot=0x%08X opd=0x%08X fn=0x%08X\n",
+                   slot, opd, fn);
+        }
+    }
+
     /* TJ_SCAN=<text>[:<delay_ms>] -- after a delay, search committed guest
      * memory for a literal and report every hit. Answers "did anything copy
      * this data anywhere?", which is otherwise very hard to establish: a

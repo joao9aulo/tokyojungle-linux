@@ -205,6 +205,14 @@ static void hle_sys_memset(ppu_context* ctx) {
     uint32_t val = (uint32_t)ctx->gpr[4];
     uint32_t len = (uint32_t)ctx->gpr[5];
     if (dst && len > 0 && len < 0x10000000) {
+        if (dst < 0x01100000u && dst + len > 0x01000000u) {
+            static int _w = -1;
+            if (_w < 0) _w = getenv("OPD_WATCH") ? 64 : 0;
+            if (_w > 0) { _w--;
+                printf("[OPDWATCH] memset dst=0x%08X len=0x%X val=%u lr=0x%08X\n",
+                       dst, len, val, (uint32_t)ctx->lr);
+            }
+        }
         memset(vm_base + dst, (int)val, len);
     }
     // r3 = dst (already set)
