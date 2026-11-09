@@ -291,3 +291,16 @@ advances through CALL subroutines (getoff reaches 0x69F08). New stall: inside
 a CALL (return 0x684AC) a 12-word packet's data is 0xBF800000 (float -1.0f) --
 the game's inline float/vertex data in the stream. The packet data walk needs
 to keep consuming method data without wedging on float payloads.
+
+## Follow-up 15: game-label semaphores consumed; walker reaches the ring tail
+
+The NV406E semaphore frontend rejected the game's own labels (dma=0xC3B40000,
+offset=0x3F000000 — the game's VRAM labels, not the 0x66606660 magic) and
+wedged the packet on the ACQUIRE. With the stub GPU the work completes
+instantly, so those acquire/release are now consumed (return 1).
+
+Result: the walker crosses the semaphores and reaches the ring tail
+(get=0x904DC). Remaining stall: a 247-word packet whose data walks past the
+ring end (word at get = 0x200104E0, type 1 — the game's ring-wrap marker or a
+misread header). Next: handle the ring tail marker (the game's own wrap word)
+or bound the packet at the context end.
