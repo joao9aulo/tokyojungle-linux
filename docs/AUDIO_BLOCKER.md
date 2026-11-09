@@ -341,3 +341,19 @@ PFontThread + font glyph calls with Shift-JIS character codes (0x7A7A, 0x306E,
 0x3082...) via the TJ_KEEP stubs (no glyph pixels yet, but the game's title
 logic is executing). No faults. Next: real font glyphs (cellFont render
 path), then a present/renderer to show the frame.
+
+## Follow-up 19: SOFTWARE CLEAR + framebuffer dump — the frame is REAL
+
+Two additions turn the stub GPU into a software frame:
+1. rsx_commands.c CLEAR_SURFACE: when the backend is NULL (Linux), paint the
+   guest's local-memory render target with the clear color (1280x720 / the
+   scissor height, pitch from the surface state).
+2. tj_present.cpp TJ_FBDUMP=/path: every 2 s dump the display buffer
+   (0xC0000000, 1280x720, pitch 5120) as a raw frame.
+
+The game's clears now execute for real: 386x white (0x00FFFFFF) + 14x dark
+gray (0x00333333) into 0xC0000000/0xC03A0000 — the game's title/loading
+screens. The dumped frame is the game's actual rendered frame (uniform white,
+glyphs still missing because cellFont is stubbed). This is the first time the
+port produces real pixels from the game's command stream. Next: software
+NV0039 blits + real cellFont glyphs to get the title text visible.
