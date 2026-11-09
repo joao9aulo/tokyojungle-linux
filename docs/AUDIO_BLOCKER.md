@@ -485,3 +485,14 @@ runs 65k+ DRAW_ARRAYS with placeholder vertices (x=0.5/y=0.5, black) and its
 own inline GCM2D writes to the UI surface 0xC0AE0700 -- the real title-screen
 content is the game's own UI pipeline. Port infrastructure is complete; the
 remaining work is game-content reverse engineering (PFont atlas fill).
+
+## Follow-up 31: the game's atlas IS populated (PFont works!)
+
+Dumped the VRAM atlas (0xCA369180): 4096 bytes of 0xFF000000 (the game's
+glyph alpha data) -- the PFont thread really does fill the 64x64 font atlas.
+So the game's text pipeline is: PFont -> atlas (working) -> DRAW_ARRAYS
+textured quads (the vertex data is the missing link: the game's VAs at
+0x0200EC70/0x020474C0 stay zeros/garbage because the game uploads the UI
+vertices on its own schedule). Next: trace the game's vertex upload (the
+writes to the VA buffers over the full boot), then the atlas sampling in the
+software rasterizer -- the last two links for visible title text.
