@@ -496,3 +496,15 @@ textured quads (the vertex data is the missing link: the game's VAs at
 vertices on its own schedule). Next: trace the game's vertex upload (the
 writes to the VA buffers over the full boot), then the atlas sampling in the
 software rasterizer -- the last two links for visible title text.
+
+## Follow-up 32: vertex upload is the game's own DMA, not the CPU stores
+
+The game's DRAW_ARRAYS vertex buffers (0x020474C0 and the VRAM candidate
+0xC0474C0) stay zero across the whole boot, and neither vm_write32 nor the
+guest memcpy writes them (300 VA-watch stores all land elsewhere in
+0x0204xxxx). The game uploads its UI vertices through its own RSX DMA (the
+m2mf/scaled inline path), which the stub renderer does not execute. The atlas
+side is confirmed live (0xCA369180 filled by the PFont). Remaining for the
+visible title text: execute the game's DMA uploads (the inline data -> VRAM
+copies the walker currently records as GCM2D inline writes) so the vertex
+buffers populate, then the rasterizer's atlas sampling composites the text.
