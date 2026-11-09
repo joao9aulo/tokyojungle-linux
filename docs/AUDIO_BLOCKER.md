@@ -265,3 +265,18 @@ stall -- the walker is inside the CALL and the RET hasn't completed. Next:
 walk the CALL subroutines to completion (the game's draw data is in the heap,
 already mapped), i.e. make sure every subroutine ends in RET (0x00020000) and
 the walker's CALL/RET state machine doesn't wedge on the subroutine's tail.
+
+## Follow-up 13: count+1 unlocks the real command stream (label fences execute!)
+
+The GCM method header's count = num_data - 1. The packet walker used
+`remaining = count` (off by one), so every count=0 command (SET_OBJECT binds
+among them) skipped its data word and the walker drifted. With
+`remaining = count + 1` (both walkers) the game's REAL stream executes:
+
+    [RSX] label write @0x03022000 = 0x00F2C5F1 (sync fence, ...)
+
+and the window advances to 0x686E8. Remaining stall: a CALL whose target
+0x1F800000 (io) is unmapped -- that's the game's framebuffer ea 0x3F800000.
+The game's libgcm CALLs into inline draw data there; the io table doesn't map
+that page. Next: map the framebuffer region in the io table (or bound the CALL
+target) so the subroutine walk completes and RETs to the ring.
