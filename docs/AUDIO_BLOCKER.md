@@ -533,3 +533,15 @@ game's vertex program -- the remaining work is executing the game's VP
 The bounded 2D pieces are done; the next session should start the real
 renderer (Vulkan minimal + the VP execution) rather than chase the pool
 rotation.
+
+## Follow-up 35: the game's text lifecycle is live (text line rendered)
+
+In the 150s run the game's font lifecycle proceeds: RenderSurfaceInit for
+the text surface (0xB6E060, buf=0xA8A8FA0, 1920x24 RGBA), GetFontIdCode,
+GetCharGlyphMetrics, GetRenderCharGlyphMetrics, UnbindRenderer, CloseFont,
+and a GCM label fence 0x159 satisfies. The game's text line buffer
+(0xA8A8FA0) is written (cleared to transparent black). The game is in its
+font/render setup loop -- the title text glyphs are the next content. The
+draw VA (0x020474C0) only ever gets the DMA tag 0xFEAD0000, so the game's UI
+vertices go through a path the stub renderer does not see; the text line +
+atlas + blit path is the one that will show the title first.
