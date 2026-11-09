@@ -246,3 +246,22 @@ ring's header word (0x00000001 at io 0, then zero padding) as SET_OBJECT binds,
 so it drifts into unmapped io (recoveries "GET 0x14766570/0x1F333330 unmapped;
 skipped to CALL/PUT"). Next: start the walker at the game's real ring base and
 handle the ring tail JUMP so the walker stays inside the ring lap.
+
+## Follow-up 12: ring now advances; walker executes the game's draw CALLs
+
+Four FIFO-walker fixes in cellGcmSys.c (all gated/observable, upstream file):
+1. walker GET starts at context.begin (was io 0 -> misread the game's header
+   region as SET_OBJECTs and drifted into unmapped io);
+2. inner loops read data words only while getoff < put;
+3. outer loop bounded by the ring end;
+4. PUT-rewind resync: when the game's window flush rewinds PUT behind GET,
+   drop the stale packet and resync (fired 2x, the window then advanced
+   0x106DC -> 0x107A4).
+
+The game's command ring now advances and the walker reaches the game's real
+draw stream: a libgcm CALL into a heap subroutine (target 0xF2BDF0, return
+0x107A8). That subroutine (the game's inline draw commands) is the current
+stall -- the walker is inside the CALL and the RET hasn't completed. Next:
+walk the CALL subroutines to completion (the game's draw data is in the heap,
+already mapped), i.e. make sure every subroutine ends in RET (0x00020000) and
+the walker's CALL/RET state machine doesn't wedge on the subroutine's tail.
