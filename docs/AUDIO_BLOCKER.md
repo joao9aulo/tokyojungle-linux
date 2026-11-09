@@ -280,3 +280,14 @@ and the window advances to 0x686E8. Remaining stall: a CALL whose target
 The game's libgcm CALLs into inline draw data there; the io table doesn't map
 that page. Next: map the framebuffer region in the io table (or bound the CALL
 target) so the subroutine walk completes and RETs to the ring.
+
+## Follow-up 14: CALL/JUMP recovery works; walker now in the draw stream
+
+Bound the outer walker's ring-end check so CALL subroutines can run past it.
+The walker now recovers from the unmapped VRAM CALL target cleanly
+("GET 0x1F800000 unmapped; skipped to 0x68700 (left CALL)") and keeps going.
+Current state: the sync-fence label writes execute repeatedly, and the walker
+advances through CALL subroutines (getoff reaches 0x69F08). New stall: inside
+a CALL (return 0x684AC) a 12-word packet's data is 0xBF800000 (float -1.0f) --
+the game's inline float/vertex data in the stream. The packet data walk needs
+to keep consuming method data without wedging on float payloads.
