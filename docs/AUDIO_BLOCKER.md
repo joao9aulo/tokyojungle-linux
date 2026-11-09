@@ -519,3 +519,17 @@ therefore complete: PFont -> atlas (live) + the game's UI vertices (live) +
 the DRAW_ARRAYS (hooked). The last two links are: resolve the draw's VA to
 the game's current buffer (the base-offset rotation) and sample the atlas in
 the rasterizer. Both are bounded renderer work.
+
+## Follow-up 34: draw VAs cycle through a buffer pool; uploads land elsewhere
+
+The game's DRAW_ARRAYS attrib offsets cycle (0xEC70 -> 0x474C0 -> 0xF288 ...)
+while the upload region 0x0204A00+ holds fresh floats (0.008, 16.375,
+19.750). The draw-time buffers stay zero: the game's vertex upload and the
+draw read different pool slots (double/triple buffering), or the vertices
+arrive via the game's vertex-program path. The text draw also carries no UV
+attrib (attrib 0 = xyz, attrib 3 = RGBA), so the atlas lookup is done by the
+game's vertex program -- the remaining work is executing the game's VP
+(constants transform + the atlas fetch), which belongs to the real renderer.
+The bounded 2D pieces are done; the next session should start the real
+renderer (Vulkan minimal + the VP execution) rather than chase the pool
+rotation.
