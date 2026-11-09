@@ -415,3 +415,15 @@ must go through its own DMA/SPU or a different base offset). The draw pipeline
 itself is complete and verified: DRAW_ARRAYS -> attrib-0 positions -> biased
 frac recovery -> barycentric fill -> local-memory surface. Next: trace the
 game's vertex upload (who writes 0x0200EC70) to get the real quad data.
+
+## Follow-up 25: the game's UI text goes through its own surface, not the DRAW_ARRAYS
+
+The DRAW_ARRAYS vertex buffers (0x0200EC70/0x020474C0) stay all-zero for the
+whole run -- those draws are the game's placeholder clears, not the text. The
+game's real text path: cellFontRenderCharGlyphImage renders the glyphs into
+the game's surface buffer, then the game blits (NV0039 m2mf, already working)
+to the UI surface 0xC0AE0700 and on to the display. The remaining stub is
+cellFontRenderSurfaceInit (TJ stub returns 0 without initializing the game's
+render surface descriptor), so the glyph blits copy from an unset buffer.
+Next: implement cellFontRenderSurfaceInit (write the game's surface fields)
+so the glyph -> surface -> blit -> display chain completes.
