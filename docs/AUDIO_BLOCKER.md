@@ -404,3 +404,14 @@ Observed draws: surf 0/0x3A0000, stride 52, tex0 = a 64x64 atlas (rect
 game uploads the UI vertex data on a later frame), so the frame stays white.
 Next: capture the vertex uploads (SET_VERTEX_DATA timing) + sample the atlas
 so the glyph quads composite.
+
+## Follow-up 24: draw data observed -- the game's UI VAs are unpopulated at draw time
+
+The rasterizer logs every draw (draw#1..N): the game's vertex buffers
+(0x0200EC70, 0x020474C0, stride 52) hold x=0.5/y=0.5 + black, or x=0/y=0 +
+garbage colors, and never change across the whole run -- the game's UI vertex
+data is not uploaded to those addresses on this path (the game's real upload
+must go through its own DMA/SPU or a different base offset). The draw pipeline
+itself is complete and verified: DRAW_ARRAYS -> attrib-0 positions -> biased
+frac recovery -> barycentric fill -> local-memory surface. Next: trace the
+game's vertex upload (who writes 0x0200EC70) to get the real quad data.
