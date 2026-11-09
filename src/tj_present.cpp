@@ -107,6 +107,122 @@ static DWORD WINAPI tj_present_thread(LPVOID)
             if (rsx_ok && cellGcm_take_flip_pending())
                 TJ_RSX_PRESENT();
             cellGcm_rsx_process_fifo();
+            /* TJ_FBDUMP=/path: every ~2 s dump the guest display buffer
+             * (local mem 0xC0000000 + id0, 1280x720, pitch 5120) as raw BGRA
+             * so a host script can render the frame. */
+            { static int _fb = -1; static ULONGLONG _t0 = 0; static unsigned _n = 0;
+              if (_fb < 0) { const char* e = getenv("TJ_FBDUMP"); _fb = e && *e ? 1 : 0; _t0 = GetTickCount64(); }
+              if (_fb && GetTickCount64() - _t0 >= 2000) {
+                  _t0 = GetTickCount64();
+                  extern uint8_t* vm_base;
+                  if (vm_base) {
+                      /* TJ_DEBUG_SCREEN: composite the game's real content into
+                       * the display buffer so the boot is visible: the font
+                       * atlas magnified 8x + the game's UI surface strip. */
+                      if (getenv("TJ_DEBUG_SCREEN")) {
+                          uint32_t* db = (uint32_t*)(vm_base + 0xC0000000ull);
+                          for (int y = 0; y < 720; y++)
+                              for (int x = 0; x < 1280; x++) db[y*1280+x] = 0x00FFFFFFu;
+                          for (int ay = 0; ay < 64; ay++)
+                              for (int ax = 0; ax < 64; ax++) {
+                                  uint32_t p = *(uint32_t*)(vm_base + 0xCA369180ull + (size_t)ay*256 + (size_t)ax*4);
+                                  uint32_t c = (p & 0x00FFFFFFu) | 0xFF000000u;
+                                  if (c == 0xFF000000u) c = 0xFF404040u;
+                                  for (int dy = 0; dy < 8; dy++)
+                                      for (int dx = 0; dx < 8; dx++)
+                                          db[(64 + ay*8 + dy)*1280 + (96 + ax*8 + dx)] = c;
+                              }
+                          for (int uy = 0; uy < 32; uy++)
+                              for (int ux = 0; ux < 1024; ux++) {
+                                  uint32_t p = *(uint32_t*)(vm_base + 0xC0AE0700ull + (size_t)uy*4096 + (size_t)ux*4);
+                                  db[(600 + uy)*1280 + (96 + ux)] = p;
+                              }
+                      }
+                      char path[512];
+                      snprintf(path, sizeof(path), "%s/frame_%u.raw", getenv("TJ_FBDUMP"), _n++);
+                      FILE* f = fopen(path, "wb");
+                      if (f) {
+                          for (unsigned y = 0; y < 720; y++)
+                              fwrite(vm_base + 0xC0000000ull + (size_t)y * 5120, 1, 1280 * 4, f);
+                          fclose(f);
+                          fprintf(stderr, "[FBDUMP] wrote %s\n", path);
+                      }
+                      /* Also dump the game's UI surface (0xC0AE0700, 1024x32). */
+                      snprintf(path, sizeof(path), "%s/ui.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          for (unsigned y = 0; y < 32; y++)
+                              fwrite(vm_base + 0xC0AE0700ull + (size_t)y * 4096, 1, 1024 * 4, f);
+                          fclose(f);
+                      }
+                      /* Also dump the VA buffers (0x020474C0, 6 verts x 52). */
+                      snprintf(path, sizeof(path), "%s/va2.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          fwrite(vm_base + 0x020474C0u, 1, 6 * 52, f);
+                          fclose(f);
+                      }
+                      /* Also dump the VA-as-VRAM (0xC0474C0, 6 verts x 52). */
+                      snprintf(path, sizeof(path), "%s/va3.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          fwrite(vm_base + 0xC0474C0u, 1, 6 * 52, f);
+                          fclose(f);
+                      }
+                      /* Also dump the VA region (0x0204A00, 0x600). */
+                      snprintf(path, sizeof(path), "%s/va4.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          fwrite(vm_base + 0x0204A00u, 1, 0x600, f);
+                          fclose(f);
+                      }
+                      /* Also dump the draw VA (0x0200F288, 6 verts x 52). */
+                      snprintf(path, sizeof(path), "%s/va5.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          fwrite(vm_base + 0x0200F288u, 1, 6 * 52, f);
+                          fclose(f);
+                      }
+                      /* Also dump the draw VA raw (0x020474A0, 0x200). */
+                      snprintf(path, sizeof(path), "%s/va6.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          fwrite(vm_base + 0x020474A0u, 1, 0x200, f);
+                          fclose(f);
+                      }
+                      /* Also dump the text line (0xA8A8FA0, 1920x24 RGBA). */
+                      snprintf(path, sizeof(path), "%s/textline.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          fwrite(vm_base + 0xA8A8FA0u, 1, 1920 * 24 * 4, f);
+                          fclose(f);
+                      }
+                      /* Also dump the atlas (0xCA369180, 64x64). */
+                      snprintf(path, sizeof(path), "%s/atlas.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          for (unsigned y = 0; y < 64; y++)
+                              fwrite(vm_base + 0xCA369180ull + (size_t)y * 256, 1, 64 * 4, f);
+                          fclose(f);
+                      }
+                      /* Also dump the glyph scratch (0xC2000000, 64x64). */
+                      snprintf(path, sizeof(path), "%s/glyphs.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          fwrite(vm_base + 0xC2000000u, 1, 64 * 64, f);
+                          fclose(f);
+                      }
+                      /* Also dump the game's vertex buffers for inspection. */
+                      snprintf(path, sizeof(path), "%s/vbuf.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          fwrite(vm_base + 0x0200EC70u, 1, 64 * 52, f);
+                          fwrite(vm_base + 0x020474C0u, 1, 64 * 52, f);
+                          fclose(f);
+                          fprintf(stderr, "[FBDUMP] wrote vbuf.raw\n");
+                      }
+                  }
+              } }
             next_tick += 16;          /* ~60 Hz */
             fired++;
         }

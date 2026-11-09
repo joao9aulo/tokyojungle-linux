@@ -545,3 +545,13 @@ font/render setup loop -- the title text glyphs are the next content. The
 draw VA (0x020474C0) only ever gets the DMA tag 0xFEAD0000, so the game's UI
 vertices go through a path the stub renderer does not see; the text line +
 atlas + blit path is the one that will show the title first.
+
+## Follow-up 36: TJ_DEBUG_SCREEN composites the game's content (visible!)
+
+Added the TJ_DEBUG_SCREEN composite in the present thread: the display buffer
+now shows the game's font atlas magnified 8x (0xCA369180 -> a 512x512 block)
+plus the game's UI surface strip (0xC0AE0700). The frame dump now contains
+the game's real data (262,144 atlas pixels + the UI strip). This gives a real
+visual boot screen while the renderer catches up. The atlas bytes decode as
+A=0xFF RGB=0 with a 4-byte periodic pattern, so the texture pitch/rect
+(0x400040) still needs the exact layout for the glyph shapes.
