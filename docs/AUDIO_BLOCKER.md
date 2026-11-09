@@ -391,3 +391,16 @@ surface, but the frame is still uniform white: the game's NV4097 draws
 (textured quads) are the stubbed s_backend and never rasterize. Next: the
 software draw_arrays rasterizer (positions/UVs from the immediate vertex
 decode + the tex0 surface) to composite the text onto the display buffer.
+
+## Follow-up 23: software rasterizer hooked (DRAW_ARRAYS -> triangle fill)
+
+The game's text uses NV4097_DRAW_ARRAYS (prim=5 triangle strip, 6 verts), which
+the null backend dropped. Hooked rsx_software_draw_arrays on Linux: reads the
+attrib-0 positions (float x/y, biased-format frac recovery like the D3D12
+backend's dbgfont path) + the attrib-3 color (float RGBA) from the resolved
+guest VAs, then barycentric triangle fill into the local-memory surface.
+Observed draws: surf 0/0x3A0000, stride 52, tex0 = a 64x64 atlas (rect
+0x400040, pitch 256). The vertices at draw time are still zeros/garbage (the
+game uploads the UI vertex data on a later frame), so the frame stays white.
+Next: capture the vertex uploads (SET_VERTEX_DATA timing) + sample the atlas
+so the glyph quads composite.
