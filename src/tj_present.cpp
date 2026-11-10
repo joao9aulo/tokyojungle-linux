@@ -121,21 +121,39 @@ static DWORD WINAPI tj_present_thread(LPVOID)
                        * atlas magnified 8x + the game's UI surface strip. */
                       if (getenv("TJ_DEBUG_SCREEN")) {
                           uint32_t* db = (uint32_t*)(vm_base + 0xC0000000ull);
+                          /* the dark loading-screen backdrop */
                           for (int y = 0; y < 720; y++)
-                              for (int x = 0; x < 1280; x++) db[y*1280+x] = 0x00FFFFFFu;
+                              for (int x = 0; x < 1280; x++) db[y*1280+x] = 0x00202020u;
+                          /* the font atlas (0xCA369180, 64x64, pitch 256) magnified 8x */
                           for (int ay = 0; ay < 64; ay++)
                               for (int ax = 0; ax < 64; ax++) {
                                   uint32_t p = *(uint32_t*)(vm_base + 0xCA369180ull + (size_t)ay*256 + (size_t)ax*4);
                                   uint32_t c = (p & 0x00FFFFFFu) | 0xFF000000u;
-                                  if (c == 0xFF000000u) c = 0xFF404040u;
+                                  if (c == 0xFF000000u) c = 0xFF505050u;
                                   for (int dy = 0; dy < 8; dy++)
                                       for (int dx = 0; dx < 8; dx++)
-                                          db[(64 + ay*8 + dy)*1280 + (96 + ax*8 + dx)] = c;
+                                          db[(80 + ay*8 + dy)*1280 + (120 + ax*8 + dx)] = c;
                               }
+                          /* the game's UI surface (0xC0AE0700, 1024x32, pitch 4096) */
                           for (int uy = 0; uy < 32; uy++)
                               for (int ux = 0; ux < 1024; ux++) {
                                   uint32_t p = *(uint32_t*)(vm_base + 0xC0AE0700ull + (size_t)uy*4096 + (size_t)ux*4);
-                                  db[(600 + uy)*1280 + (96 + ux)] = p;
+                                  db[(600 + uy)*1280 + (120 + ux)] = p;
+                              }
+                          /* the text line (0xA8A8FA0, 1920x24 RGBA) scaled 1/2 */
+                          for (int ty = 0; ty < 24; ty++)
+                              for (int tx = 0; tx < 960; tx++) {
+                                  uint32_t p = *(uint32_t*)(vm_base + 0xA8A8FA0ull + (size_t)ty*7680 + (size_t)(tx*2)*4);
+                                  uint32_t c = (p & 0x00FFFFFFu) | 0xFF000000u;
+                                  db[(540 + ty)*1280 + (120 + tx)] = c;
+                              }
+                          /* the texture buffer's sample (0x40100000, 128x4 words) as the progress */
+                          for (int py = 0; py < 16; py++)
+                              for (int px = 0; px < 128; px++) {
+                                  uint32_t p = *(uint32_t*)(vm_base + 0x40100000ull + (size_t)(py*128+px)*4);
+                                  uint32_t c = p ? 0xFFE0A030u : 0xFF303030u;
+                                  db[(120 + py*4)*1280 + (640 + px*2)] = c;
+                                  db[(121 + py*4)*1280 + (640 + px*2)] = c;
                               }
                       }
                       char path[512];
@@ -223,8 +241,9 @@ static DWORD WINAPI tj_present_thread(LPVOID)
                        * (0x5F7480) so the loading screen's 90% branch fires. */
                       if (getenv("TJ_FAKE_PROGRESS")) {
                           static unsigned _fp = 0;
-                          if (_fp++ == 1) {
-                              fprintf(stderr, "[TJ] faking loading progress 0x5F7480 = 100\n");
+                          _fp++;
+                          if (_fp == 4 || _fp == 8 || _fp == 12 || _fp == 16) {
+                              fprintf(stderr, "[TJ] faking loading progress 0x5F7480 = 100 (#%u)\n", _fp);
                               *(uint32_t*)(vm_base + 0x5F7480u) = 0x00000064u;
                           }
                       }
