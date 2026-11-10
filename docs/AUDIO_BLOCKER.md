@@ -775,3 +775,13 @@ wrote a header and stalled inside the game's own logic. The port's HLE
 surface is complete; the loading-stage completion is the game's internal
 unpack loop. Further progress needs the game's unpack loop's condition
 pinned (the SPU job or the loader request that feeds it).
+
+## Follow-up 57: the game READS both packs fully -- the unpack is just SLOW
+
+FLOW_FSDBG shows the game reading titleTexPack.pac (23MB) AND
+titleTexPack_JP.pac (11.8MB) completely (536 x 64KB reads, the last got=16688
+at EOF). The magic is "TJPA". So the unpack is NOT stalled on I/O: the game
+is processing the texture pack at the recompiled pace, writing the extracted
+textures to the 24MB buffer slowly (259 bytes in the first 4KB so far). The
+title screen follows the unpack's completion -- it is a matter of the game's
+own processing speed, not a port gap.
