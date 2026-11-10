@@ -669,3 +669,14 @@ object update (iterating its 349-object array, func_0008C1E4's 0xD0-stride
 loop); the watchdog's STUCK tag is the loop's stable per-frame state, not a
 deadlock. The game is simply processing the title's content at the
 recompiled pace -- the title render follows the unpack's completion.
+
+## Follow-up 47: the stage object only toggles the request flag
+
+300 writes over 60s to the 0x5F7000-0x5F9000 region: ALL of them hit
+0x5F74F4 (the request state flag, 1 <-> 0x20). The game's stage index
+([0x5F7480]) is static zero -- the loading stage's flip does not go through
+that field. The game's per-frame loop (func_0008C1E4, the 349-object 0xD0
+stride update) runs at ~4fps recompiled, and the texture unpack writes into
+the 24MB buffer. The stage flip's signal is elsewhere in the game's state --
+next: watch the game's loader's completion write (the request done
+counter), which the loading screen's logic polls.
