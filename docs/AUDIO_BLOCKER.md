@@ -618,3 +618,15 @@ return 0), and the game's sgsfile thread waits on cond=1 for the requests.
 The title-screen trigger is the game's own logic's condition inside
 func_0008C1E4 -- the next session should trace that loop's exit condition
 (the game's loading-complete flag/counter it polls).
+
+## Follow-up 42: the main thread's loop is the game's own loading-stage logic
+
+The game's main thread (tid 1) sits in the game's own per-frame function
+(func_0008C1E4) with the loop counter at 0x5F7480 all zeros and the stack
+showing the game's normal locals (0x0049F780 pointers, the return 0x0008C324,
+the TOC 0x003591E0). The DLC scan is done (21 NPDRMOpenThread cycles, the
+dlc0000..dlc0020.edat Stats all cleanly missing). The loading-stage exit
+condition is the game's own state machine -- this is now pure game-logic
+reverse engineering (the port infrastructure is complete). Next: watch the
+game's stage pointer (the object at 0x0049F780) for the value the game flips
+when the loading completes.
