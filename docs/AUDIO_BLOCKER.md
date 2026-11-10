@@ -555,3 +555,14 @@ the game's real data (262,144 atlas pixels + the UI strip). This gives a real
 visual boot screen while the renderer catches up. The atlas bytes decode as
 A=0xFF RGB=0 with a 4-byte periodic pattern, so the texture pitch/rect
 (0x400040) still needs the exact layout for the glyph shapes.
+
+## Follow-up 37: the draws read the game's data at draw time (the 0.5 quads)
+
+The rasterizer's draw-time reads show the game's actual vertex data (x=0.5,
+y=0.5 -- the game's centered UI quads) while the later dumps are zero: the
+game uploads -> draws -> clears its vertex pool each frame. The game's
+INLINE_ARRAY path (0x1714) is handled by the ps3recomp's immediate staging
+and now always feeds the software rasterizer on Linux. The game's boot-stage
+UI is the centered placeholder quads; the real title content appears when
+the game's loading completes and its UI stage advances. The renderer's
+pieces (immediate draws, register fallback) are in place for that stage.
