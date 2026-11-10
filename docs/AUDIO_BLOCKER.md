@@ -606,3 +606,15 @@ cycle, and the render loop runs with the resyncs. The remaining wait before
 the title screen is the game's own flow (its loading-complete condition),
 not an HLE gap. Added TJ_SPURS_SATISFY for the cellSpurs event flag (the
 SPU2PPU flag) for when the game's SPU-side signal is needed.
+
+## Follow-up 41: the main thread spins in the game's own per-frame logic
+
+The watchdog shows the game's main thread stuck in the game's own loop:
+guest func_00000000+0x0 (RIP=0) with LR=0x0008C440 inside func_0008C1E4
+(0x0008C1E4-0x0008C920, the game's per-frame audio/UI processing), r3=r4=
+0x5F7480. The game's own state machine is in its loading-screen stage: the
+sound banks are loaded, the Sail video player is initialized (the stubs
+return 0), and the game's sgsfile thread waits on cond=1 for the requests.
+The title-screen trigger is the game's own logic's condition inside
+func_0008C1E4 -- the next session should trace that loop's exit condition
+(the game's loading-complete flag/counter it polls).
