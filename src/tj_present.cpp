@@ -223,7 +223,7 @@ static DWORD WINAPI tj_present_thread(LPVOID)
                        * (0x5F7480) so the loading screen's 90% branch fires. */
                       if (getenv("TJ_FAKE_PROGRESS")) {
                           static unsigned _fp = 0;
-                          if (_fp++ == 8) {
+                          if (_fp++ == 1) {
                               fprintf(stderr, "[TJ] faking loading progress 0x5F7480 = 100\n");
                               *(uint32_t*)(vm_base + 0x5F7480u) = 0x00000064u;
                           }
