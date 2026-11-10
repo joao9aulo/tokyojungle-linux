@@ -640,3 +640,13 @@ runs, allocating per-frame objects. The loading stage is the game's own
 state machine's active loop -- it is not deadlocked on an HLE call. The
 title's trigger will come from the game's own stage flip; the port
 infrastructure side is complete and stable.
+
+## Follow-up 44: the game is loading the TITLE screen's content!
+
+The game's loader (sys_fs opens) is loading: titleTexPack.pac +
+titleTexPack_JP.pac (THE TITLE SCREEN'S TEXTURES), clg_txtJPN.pac (the
+Japanese text), strData_JP.pac (the strings), eo_wolf1_pac.pad (the wolf's
+edge data), em_pac_s/em_tex_s (the emu/edge data). The game's boot reached
+the title's content stage -- it was never stuck, just slow (the -O1
+recompiled pace). The title screen's textures are loading; the title's
+render is the next event after the game finishes parsing them.
