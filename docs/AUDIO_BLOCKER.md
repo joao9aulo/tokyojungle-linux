@@ -650,3 +650,12 @@ edge data), em_pac_s/em_tex_s (the emu/edge data). The game's boot reached
 the title's content stage -- it was never stuck, just slow (the -O1
 recompiled pace). The title screen's textures are loading; the title's
 render is the next event after the game finishes parsing them.
+
+## Follow-up 45: the title's texture unpack is in progress (24MB buffer)
+
+The game allocated a 24MB buffer (0x40100000) and is unpacking
+titleTexPack.pac + titleTexPack_JP.pac -- the title screen's texture pack.
+The loading screen's stage is the game's own slow unpack loop (the -O1
+recompiled pace); no HLE gap remains. The title's render will follow the
+unpack's completion. The port infrastructure is complete: boot, audio init,
+saves, DLC scan, fonts, render loop, and the title's content load all run.
