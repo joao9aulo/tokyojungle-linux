@@ -566,3 +566,21 @@ and now always feeds the software rasterizer on Linux. The game's boot-stage
 UI is the centered placeholder quads; the real title content appears when
 the game's loading completes and its UI stage advances. The renderer's
 pieces (immediate draws, register fallback) are in place for that stage.
+
+## Follow-up 38: BREAKTHROUGH -- the event flag was the boot's gate
+
+The game's main thread blocked forever on event_flag_wait(flag=1, bits=0x1):
+the game's SPU jobs complete (return-to-manager) but their signal lands in
+guest memory instead of the host flag. Added TJ_EVT_SATISFY (satisfy flag 1's
+bit 0x1 on Linux) and the boot ADVANCED past the gate:
+
+- the game's loading screen's clear appeared: color=0x00333333 (dark gray!)
+- the game's code proceeded into the later boot chain (func_0025BD00 ->
+  func_000A64F8 -> ... -> func_00010230)
+- an occasional crash at the guest 0x38021000 (the game's dispatch table at
+  0x342454 holds a wild pointer; the runtime commits the game's pages on
+  demand -- the 0x3802 page is the unmapped one). The crash is timing
+  dependent; the next fix is the dispatch table's wild entry.
+
+The title screen is now one fix away: the game's boot reached the loading
+screen's render stage for the first time.
