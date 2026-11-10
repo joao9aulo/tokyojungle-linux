@@ -691,3 +691,15 @@ handshake is the game's normal request/response loop: main signals cond=1
 loading's completion counter the UI polls is a field of this request
 structure -- the next step is tracing func_0022E8A4's write to find which
 field increments when a request finishes.
+
+## Follow-up 49: the loading % counter is 0x5F7480 (the fake 100 advances the game!)
+
+TJ_FAKE_PROGRESS writes 100 to 0x5F7480 and the game's flow ADVANCES: the
+frame turns the loading screen's real gray (0x33333300, 921600 px) instead
+of white -- the game entered its loading-complete path -- then crashes in
+the title setup: func_0025BD60 (the import dispatch for the slot at
+0x342460 -> OPD 0x01000528 -> stub 0x01180024). The import stubs region
+(0x01180000) dumps as ALL ZEROS: the game's title-stage imports were never
+resolved into their stubs. The fix is to fill the 0x011800xx stubs with the
+HLE dispatch (or resolve the title-stage NIDs). This is the last boot
+blocker: with the stubs filled, the title screen's setup completes.

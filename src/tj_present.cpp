@@ -198,12 +198,35 @@ static DWORD WINAPI tj_present_thread(LPVOID)
                           fwrite(vm_base + 0x0200EC70u, 1, 6 * 52, f);
                           fclose(f);
                       }
+                      /* Also dump the import stubs (0x01180000, 0x80). */
+                      snprintf(path, sizeof(path), "%s/stubs.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          fwrite(vm_base + 0x01180000u, 1, 0x80, f);
+                          fclose(f);
+                      }
+                      /* Also dump the early OPDs (0x01000500, 0x40). */
+                      snprintf(path, sizeof(path), "%s/opd2.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          fwrite(vm_base + 0x01000500u, 1, 0x40, f);
+                          fclose(f);
+                      }
                       /* Also dump the import OPDs (0x01000C00, 0x600). */
                       snprintf(path, sizeof(path), "%s/opds.raw", getenv("TJ_FBDUMP"));
                       f = fopen(path, "wb");
                       if (f) {
                           fwrite(vm_base + 0x01000C00u, 1, 0x600, f);
                           fclose(f);
+                      }
+                      /* TJ_FAKE_PROGRESS: force the game's loading % counter
+                       * (0x5F7480) so the loading screen's 90% branch fires. */
+                      if (getenv("TJ_FAKE_PROGRESS")) {
+                          static unsigned _fp = 0;
+                          if (_fp++ == 8) {
+                              fprintf(stderr, "[TJ] faking loading progress 0x5F7480 = 100\n");
+                              *(uint32_t*)(vm_base + 0x5F7480u) = 0x00000064u;
+                          }
                       }
                       /* Also sample the texture buffer (0x40100000, 4KB). */
                       snprintf(path, sizeof(path), "%s/texbuf.raw", getenv("TJ_FBDUMP"));
