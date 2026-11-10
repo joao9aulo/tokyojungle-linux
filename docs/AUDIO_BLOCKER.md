@@ -659,3 +659,13 @@ The loading screen's stage is the game's own slow unpack loop (the -O1
 recompiled pace); no HLE gap remains. The title's render will follow the
 unpack's completion. The port infrastructure is complete: boot, audio init,
 saves, DLC scan, fonts, render loop, and the title's content load all run.
+
+## Follow-up 46: the texture unpack is actively writing (259/4096 bytes live)
+
+Sampling the 24MB texture buffer (0x40100000) shows it filling (259
+non-zero bytes in the first 4KB): the game's titleTexPack unpack is actively
+writing texture data. The main thread's loop is the game's normal per-frame
+object update (iterating its 349-object array, func_0008C1E4's 0xD0-stride
+loop); the watchdog's STUCK tag is the loop's stable per-frame state, not a
+deadlock. The game is simply processing the title's content at the
+recompiled pace -- the title render follows the unpack's completion.
