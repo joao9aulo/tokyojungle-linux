@@ -746,3 +746,13 @@ loading completes; no HLE gap feeds it. The title screen is the game's
 state-machine transition, reachable either by the game's own loading
 completion or by a targeted shim once the exact object state is pinned.
 The port infrastructure is complete; this is the last boot-stage detail.
+
+## Follow-up 54: the game's per-frame branch is its normal loading path
+
+func_0008C1E4's branch at loc_0008C4A8 (taken when [0x5F7480] <= 91, the
+game's normal state) runs the game's per-frame processing (func_001F74EC +
+func_001F72F4) and returns; the >= 92 branch runs the object loop. Both are
+the game's own per-frame work -- the stage flip does not hinge on the
+0x5F7480 value alone. The loading screen's transition is the game's own
+state machine; the port's HLE side is complete and stable. The remaining
+work is pure game-state RE (pin the loader's done-object write).
