@@ -715,3 +715,13 @@ installed (the TLS g_active_ctx fix). The title's import dispatch crash is
 the last boot blocker; the stubs (0x0118xxxx) are registered via
 g_hle_dispatch -> ppu_register_function, so the wild call must come from an
 unregistered trampoline slot -- the crash regs will name it.
+
+## Follow-up 51: the fake progress now routes the game into SPU activity
+
+With the fake at ~16s, the game's post-fake state shows the SPU
+write-through handlers running (rwh entries with r3=0x3FBC0 r4=0x3FC00, the
+SPURS context) -- the game proceeded past the loading check into its SPU
+work instead of crashing this run. The title-setup crash is a race between
+the game's loader thread and the main thread; the regs dump is armed. The
+deterministic path is to satisfy the loader's own completion instead of the
+fake (the real loading counter the loader increments per request).
