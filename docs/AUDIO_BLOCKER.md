@@ -735,3 +735,14 @@ progress counter there either. The loading screen's progress counter
 candidate is the game's own per-frame logic counting completed requests
 through the cond handshake. The deep RE continues; the port infrastructure
 itself remains complete.
+
+## Follow-up 53: the per-frame loop's exit is the object state's transition
+
+The game's main thread spins inside func_0008C1E4's internal loop (the
+349-object, 0xD0-stride update). The loop exits when func_00088D58 returns 0
+-- the object's update signals "done" -- and then the game's stage checks
+(2/3) run. The object's done-state is set by the game's own logic when the
+loading completes; no HLE gap feeds it. The title screen is the game's
+state-machine transition, reachable either by the game's own loading
+completion or by a targeted shim once the exact object state is pinned.
+The port infrastructure is complete; this is the last boot-stage detail.
