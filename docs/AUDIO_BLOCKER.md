@@ -630,3 +630,13 @@ condition is the game's own state machine -- this is now pure game-logic
 reverse engineering (the port infrastructure is complete). Next: watch the
 game's stage pointer (the object at 0x0049F780) for the value the game flips
 when the loading completes.
+
+## Follow-up 43: the game's per-frame loop is actively working
+
+The stage watch shows the game's main thread's stack frames writing fresh
+heap pointers each cycle (0x0049F904=0x00CBC530 -> 0x00DBC530 -> 0x00EBC530,
+the monotonically increasing allocations): the game's per-frame processing
+runs, allocating per-frame objects. The loading stage is the game's own
+state machine's active loop -- it is not deadlocked on an HLE call. The
+title's trigger will come from the game's own stage flip; the port
+infrastructure side is complete and stable.
