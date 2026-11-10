@@ -124,6 +124,13 @@ static void tj_sigsegv_fault_commit(int sig, siginfo_t* si, void* /*uctx*/)
         }
     }
     /* Not a committable guest page -- report and exit. */
+    {
+        static int _mf = 0;
+        if (_mf++ < 3)
+            fprintf(stderr, "[TJ] commit FAILED at host 0x%llX errno=%d vm_base=%p guest_off=0x%llX\n",
+                    (unsigned long long)at, errno, (void*)vm_base,
+                    vm_base ? (unsigned long long)(at - (uintptr_t)vm_base) : 0ULL);
+    }
     tj_crash_filter((unsigned long)sig);
     fprintf(stderr, "\n[TJ] signal %d at host 0x%llX\n", sig,
             (unsigned long long)at);

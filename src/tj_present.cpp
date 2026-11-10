@@ -183,6 +183,35 @@ static DWORD WINAPI tj_present_thread(LPVOID)
                           fwrite(vm_base + 0x0200F288u, 1, 6 * 52, f);
                           fclose(f);
                       }
+                      /* Also dump the 2nd atlas (0xCA365180, 64x64, pitch 256). */
+                      snprintf(path, sizeof(path), "%s/atlas2.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          for (unsigned y = 0; y < 64; y++)
+                              fwrite(vm_base + 0xCA365180ull + (size_t)y * 256, 1, 64 * 4, f);
+                          fclose(f);
+                      }
+                      /* Also dump the draw#1 VA (0x0200EC70, 6 verts x 52). */
+                      snprintf(path, sizeof(path), "%s/va1.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          fwrite(vm_base + 0x0200EC70u, 1, 6 * 52, f);
+                          fclose(f);
+                      }
+                      /* Also dump the import OPDs (0x01000C00, 0x600). */
+                      snprintf(path, sizeof(path), "%s/opds.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          fwrite(vm_base + 0x01000C00u, 1, 0x600, f);
+                          fclose(f);
+                      }
+                      /* Also dump the import table (0x342400, 0x200). */
+                      snprintf(path, sizeof(path), "%s/imports.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          fwrite(vm_base + 0x342400u, 1, 0x200, f);
+                          fclose(f);
+                      }
                       /* Also dump the draw VA raw (0x020474A0, 0x200). */
                       snprintf(path, sizeof(path), "%s/va6.raw", getenv("TJ_FBDUMP"));
                       f = fopen(path, "wb");

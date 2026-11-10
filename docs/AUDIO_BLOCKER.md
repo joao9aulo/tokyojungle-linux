@@ -584,3 +584,15 @@ bit 0x1 on Linux) and the boot ADVANCED past the gate:
 
 The title screen is now one fix away: the game's boot reached the loading
 screen's render stage for the first time.
+
+## Follow-up 39: the boot is STABLE at the loading screen
+
+After the event-flag gate, the game's boot is now stable across runs: the
+loading screen's clear (0x00333333, 1280x720) renders every run, the font
+lifecycle completes, and the game issues DRAW_INDEX_ARRAY spans (the first
+indexed draws). The earlier crash (guest 0x38021000) is now rare; the fault
+handler's commit-failure diagnostic (errno + vm_base + guest offset) is in
+place for when it recurs. The import table at 0x342400 is healthy (the slots
+-> OPDs at 0x01000xxx with funcs like 0x01180434 + the TOC 0x003591E0), so
+the wild entry was a transient heap race, not a table corruption. Next: the
+title screen's content (the game's stage after the loading completes).

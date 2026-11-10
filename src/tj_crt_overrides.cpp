@@ -250,6 +250,14 @@ static void tj_peek(void)
         fprintf(stderr, " %08X", vm_read32((uint32_t)addr + i * 4));
     }
     fprintf(stderr, "\n");
+    /* TJ_PEEK also dumps the game's dispatch table (0x342400) -- the wild
+     * entries there caused the 0x38021000 crash. */
+    fprintf(stderr, "[TJ] dispatch 0x00342400:");
+    for (unsigned i = 0; i < 64; i++) {
+        if (i % 8 == 0) fprintf(stderr, "\n   +0x%03X:", i * 4);
+        fprintf(stderr, " %08X", vm_read32(0x00342400u + i * 4));
+    }
+    fprintf(stderr, "\n");
 }
 
 extern "C" int tj_crash_filter(unsigned long code)
