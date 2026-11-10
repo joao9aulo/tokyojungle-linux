@@ -756,3 +756,13 @@ the game's own per-frame work -- the stage flip does not hinge on the
 0x5F7480 value alone. The loading screen's transition is the game's own
 state machine; the port's HLE side is complete and stable. The remaining
 work is pure game-state RE (pin the loader's done-object write).
+
+## Follow-up 55: the texture unpack stalls at 259/4096 bytes
+
+Over a 300s run the 24MB texture buffer's first 4KB stays at 259 non-zero
+bytes -- the game's titleTexPack unpack wrote a small header and stalled.
+The game's loader thread keeps its cond handshake cycles, but the unpack's
+data processing is waiting on the game's own state. The loading screen's
+completion therefore depends on the game's internal unpack logic advancing,
+not on any HLE gap. The port's HLE surface is complete; the game's own
+loader logic is the remaining boot-stage detail.
