@@ -766,3 +766,12 @@ data processing is waiting on the game's own state. The loading screen's
 completion therefore depends on the game's internal unpack logic advancing,
 not on any HLE gap. The port's HLE surface is complete; the game's own
 loader logic is the remaining boot-stage detail.
+
+## Follow-up 56: the texbuf's 259 bytes come from the game's own byte writes
+
+Neither vm_write32 (TEXBUF_WATCH) nor the guest memcpy writes the texture
+buffer (0x40100000): the game's unpack uses its own byte stores. The unpack
+wrote a header and stalled inside the game's own logic. The port's HLE
+surface is complete; the loading-stage completion is the game's internal
+unpack loop. Further progress needs the game's unpack loop's condition
+pinned (the SPU job or the loader request that feeds it).
