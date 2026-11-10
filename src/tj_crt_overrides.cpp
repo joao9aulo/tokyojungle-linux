@@ -270,6 +270,20 @@ extern "C" int tj_crash_filter(unsigned long code)
 #else
     int n = backtrace(bt, 64);
 #endif
+    /* The faulting guest's registers: the ps3recomp's active ctx. */
+    extern __thread void* g_active_ctx;
+    if (g_active_ctx) {
+        /* the ppu_context's gpr[] layout: dump r0-r13 + lr/ctr */
+        typedef struct { unsigned long long gpr[32]; unsigned long long lr, ctr; } ctx_t;
+        ctx_t* c = (ctx_t*)g_active_ctx;
+        fprintf(stderr, "[TJ] guest regs: r0=%08llX r1=%08llX r2=%08llX r3=%08llX "
+                "r4=%08llX r5=%08llX r11=%08llX r12=%08llX lr=%08llX ctr=%08llX\n",
+                (unsigned long long)(unsigned)c->gpr[0], (unsigned long long)(unsigned)c->gpr[1],
+                (unsigned long long)(unsigned)c->gpr[2], (unsigned long long)(unsigned)c->gpr[3],
+                (unsigned long long)(unsigned)c->gpr[4], (unsigned long long)(unsigned)c->gpr[5],
+                (unsigned long long)(unsigned)c->gpr[11], (unsigned long long)(unsigned)c->gpr[12],
+                (unsigned long long)(unsigned)c->lr, (unsigned long long)(unsigned)c->ctr);
+    }
     fprintf(stderr, "\n[TJ] fault 0x%08lX -- guest chain:\n", code);
     for (int i = 0; i < n; i++) {
         uintptr_t off = 0;

@@ -703,3 +703,15 @@ the title setup: func_0025BD60 (the import dispatch for the slot at
 resolved into their stubs. The fix is to fill the 0x011800xx stubs with the
 HLE dispatch (or resolve the title-stage NIDs). This is the last boot
 blocker: with the stubs filled, the title screen's setup completes.
+
+## Follow-up 50: the fake progress's effect is timing-dependent
+
+Re-running TJ_FAKE_PROGRESS (0x5F7480=100) sometimes leaves the game
+unchanged (the fake fires but the loading loop was not at its check point);
+the earlier run showed the real effect: the frame turned 0x33333300 and the
+game entered the title setup before crashing in the import dispatch
+(func_0025BD60 -> 0x01180024). The guest-register dump at crash time is now
+installed (the TLS g_active_ctx fix). The title's import dispatch crash is
+the last boot blocker; the stubs (0x0118xxxx) are registered via
+g_hle_dispatch -> ppu_register_function, so the wild call must come from an
+unregistered trampoline slot -- the crash regs will name it.
