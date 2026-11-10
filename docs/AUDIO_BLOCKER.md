@@ -680,3 +680,14 @@ stride update) runs at ~4fps recompiled, and the texture unpack writes into
 the 24MB buffer. The stage flip's signal is elsewhere in the game's state --
 next: watch the game's loader's completion write (the request done
 counter), which the loading screen's logic polls.
+
+## Follow-up 48: the loader's handshake is a full request queue
+
+The tid 4's wait function (func_00233B48) copies a 9-field request struct
+(offsets 0x0-0x40) from the queue into its object, then calls func_00231A3C
+(the cond wait) and func_0022E8A4/func_0022E6C8 (the processing). The
+handshake is the game's normal request/response loop: main signals cond=1
+(request), the loader signals cond=2/3 (done), main waits cond=3. The
+loading's completion counter the UI polls is a field of this request
+structure -- the next step is tracing func_0022E8A4's write to find which
+field increments when a request finishes.
