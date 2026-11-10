@@ -205,6 +205,27 @@ static DWORD WINAPI tj_present_thread(LPVOID)
                           fwrite(vm_base + 0x01000C00u, 1, 0x600, f);
                           fclose(f);
                       }
+                      /* Also sample the texture buffer (0x40100000, 4KB). */
+                      snprintf(path, sizeof(path), "%s/texbuf.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          fwrite(vm_base + 0x40100000u, 1, 4096, f);
+                          fclose(f);
+                      }
+                      /* Also dump the main thread's stack (0xD00FFA00, 0x100). */
+                      snprintf(path, sizeof(path), "%s/stack.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          fwrite(vm_base + 0xD00FFA00u, 1, 0x100, f);
+                          fclose(f);
+                      }
+                      /* Also dump the game's loop counter (0x5F7480, 0x40). */
+                      snprintf(path, sizeof(path), "%s/counter.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          fwrite(vm_base + 0x5F7480u, 1, 0x40, f);
+                          fclose(f);
+                      }
                       /* Also dump the import table (0x342400, 0x200). */
                       snprintf(path, sizeof(path), "%s/imports.raw", getenv("TJ_FBDUMP"));
                       f = fopen(path, "wb");

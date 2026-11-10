@@ -195,6 +195,13 @@ static void hle_sys_memcpy(ppu_context* ctx) {
     uint32_t src = (uint32_t)ctx->gpr[4];
     uint32_t len = (uint32_t)ctx->gpr[5];
     if (dst && src && len > 0 && len < 0x10000000) {
+        { static int _mw = -1;
+          if (_mw < 0) _mw = getenv("MEMCPY_WATCH") ? 20 : 0;
+          if (_mw > 0 && ((dst >= 0xCA360000u && dst < 0xCA400000u) ||
+                           (dst >= 0x02040000u && dst < 0x02060000u))) { _mw--;
+              fprintf(stderr, "[MEMCPY-WATCH] dst=0x%08X src=0x%08X len=%u lr=0x%08X\n",
+                      dst, src, len, (uint32_t)ctx->lr);
+          } }
         memmove(vm_base + dst, vm_base + src, len);
     }
     // r3 = dst (already set)

@@ -124,6 +124,7 @@ extern "C" {
     void cellFontGetFontIdCode(void);
     void cellFontGetRenderCharGlyphMetricsVertical(void);
     void cellFontRenderCharGlyphImage(void);
+    void cellFontRenderSurfaceInit(void);
     void cellFontSetupRenderScalePixel(void);
     void cellFontFTInit(void);
     void cellFontFTEnd(void);
@@ -1216,6 +1217,7 @@ extern "C" void ppu_hle_register_all(void) {
     ps3_hle_register(0x8657C8F5u, "cellFontSetEffectSlant", (void*)cellFontSetEffectSlant);
     ps3_hle_register(0x1387C45Cu, "cellFontGetHorizontalLayout", (void*)cellFontGetHorizontalLayout);
     ps3_hle_register(0x2DA9FD9Du, "cellFontGetRenderCharGlyphMetrics", (void*)cellFontGetRenderCharGlyphMetrics);
+    ps3_hle_register(0x90B9465Eu, "cellFontRenderSurfaceInit", (void*)cellFontRenderSurfaceInit);
     ps3_hle_register(0xD8EAEE9Fu, "cellFontGetCharGlyphMetrics", (void*)cellFontGetCharGlyphMetrics);
     ps3_hle_register(0x98AC5524u, "cellFontGetFontIdCode", (void*)cellFontGetFontIdCode);
     ps3_hle_register(0x700E6223u, "cellFontGetRenderCharGlyphMetricsVertical", (void*)cellFontGetRenderCharGlyphMetricsVertical);
