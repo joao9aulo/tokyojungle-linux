@@ -34,6 +34,10 @@ fi
 # PS3_VERBOSE=0 forces quiet HLE logging (the default turns verbose when
 # stderr is redirected to a file).
 export PS3_VERBOSE=0
+# TJ_REF_HACK: publish the game's gcmFinish fence (breaks the flip spin).
+# TJ_EVT_SATISFY: satisfy the game's SPU event flag (boot's gate).
+export TJ_REF_HACK=1
+export TJ_EVT_SATISFY=1
 
 if [ "${1:-}" = "quick" ]; then
     exec timeout 20 "$BIN" 2>&1 | head -200
