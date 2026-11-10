@@ -725,3 +725,13 @@ work instead of crashing this run. The title-setup crash is a race between
 the game's loader thread and the main thread; the regs dump is armed. The
 deterministic path is to satisfy the loader's own completion instead of the
 fake (the real loading counter the loader increments per request).
+
+## Follow-up 52: the loader's state region (TOC+0x21D0) receives no stores
+
+Watching 0x0035B000-0x0035C000 (the loader's TOC-relative globals) over 40s
+shows zero writes: the loader's request processing does not increment a
+progress counter there either. The loading screen's progress counter
+(0x5F7480) is therefore fed from a different producer -- the most likely
+candidate is the game's own per-frame logic counting completed requests
+through the cond handshake. The deep RE continues; the port infrastructure
+itself remains complete.
