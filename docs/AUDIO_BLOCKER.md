@@ -596,3 +596,13 @@ place for when it recurs. The import table at 0x342400 is healthy (the slots
 -> OPDs at 0x01000xxx with funcs like 0x01180434 + the TOC 0x003591E0), so
 the wild entry was a transient heap race, not a table corruption. Next: the
 title screen's content (the game's stage after the loading completes).
+
+## Follow-up 40: the event flag's satisfy covers all waits; the boot waits on the game's own flow
+
+The game's 70 event_flag_wait calls (flag 1, bits 0x1) are all satisfied now
+(TJ_EVT_SATISFY covers every bitpat). The game's boot's state: the sound
+banks finish loading (05_tj_stage02.sgd is the last), the PFont threads
+cycle, and the render loop runs with the resyncs. The remaining wait before
+the title screen is the game's own flow (its loading-complete condition),
+not an HLE gap. Added TJ_SPURS_SATISFY for the cellSpurs event flag (the
+SPU2PPU flag) for when the game's SPU-side signal is needed.
