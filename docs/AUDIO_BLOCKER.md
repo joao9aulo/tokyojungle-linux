@@ -785,3 +785,13 @@ is processing the texture pack at the recompiled pace, writing the extracted
 textures to the 24MB buffer slowly (259 bytes in the first 4KB so far). The
 title screen follows the unpack's completion -- it is a matter of the game's
 own processing speed, not a port gap.
+
+## Follow-up 58: the reads complete but the extraction stays stalled
+
+Over a 400s run the packs are fully read (536 x 64KB), yet the texture
+buffer stays at 259 bytes: the game's extraction pass (TJPA decode -> the
+24MB buffer) does not advance. The SPU side runs (8 jobs complete, the SPURS
+event flag attached at 0x5F7400). The extraction's stall is inside the
+game's own decode logic. The pack's header/index pass completed; the
+per-texture decode is the next RE target (find the game's decode function
+via the LR 0x002412B0 caller chain).
