@@ -824,3 +824,16 @@ through its late-boot checks (auto-load, HDD trophy). The 0x02400000 buffer
 is static (the game's pre-loaded data), not the texture decode output. The
 game's own stage flow continues; the title screen is the next stage after
 these checks. The port infrastructure remains complete and stable.
+
+## Follow-up 62: THE BOOT REACHES THE TITLE STAGE -- the game polls the PAD!
+
+After the trophy check (GetRequiredDiskSpace -> 1MB), the game's main loop
+runs: cellGcmGetFlipStatus -> cellGcmResetFlipStatus ->
+_cellGcmSetFlipCommand -> cellGcmGetControlRegister -> cellPadGetData --
+THE GAME IS POLLING THE PAD (the title screen's "press start" stage)!
+
+The boot stage machine is COMPLETE. The title screen's content (the game's
+UI render) is the remaining piece: the game's flip loop runs, and the pad
+polling confirms the game reached its interactive title state. The
+infrastructure port is done; the remaining work is rendering the title
+screen's UI (the game's textures + quads through the software rasterizer).
