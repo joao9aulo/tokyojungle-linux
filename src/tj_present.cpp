@@ -147,13 +147,13 @@ static DWORD WINAPI tj_present_thread(LPVOID)
                                   uint32_t c = (p & 0x00FFFFFFu) | 0xFF000000u;
                                   db[(540 + ty)*1280 + (120 + tx)] = c;
                               }
-                          /* the texture buffer's sample (0x40100000, 128x4 words) as the progress */
-                          for (int py = 0; py < 16; py++)
-                              for (int px = 0; px < 128; px++) {
-                                  uint32_t p = *(uint32_t*)(vm_base + 0x40100000ull + (size_t)(py*128+px)*4);
+                          /* the game's REAL texture buffer (0x02400000, 64x64) as the progress */
+                          for (int py = 0; py < 64; py++)
+                              for (int px = 0; px < 64; px++) {
+                                  uint32_t p = *(uint32_t*)(vm_base + 0x02400000ull + (size_t)(py*64+px)*4);
                                   uint32_t c = p ? 0xFFE0A030u : 0xFF303030u;
-                                  db[(120 + py*4)*1280 + (640 + px*2)] = c;
-                                  db[(121 + py*4)*1280 + (640 + px*2)] = c;
+                                  db[(96 + py*3)*1280 + (700 + px*3)] = c;
+                                  db[(97 + py*3)*1280 + (700 + px*3)] = c;
                               }
                       }
                       char path[512];
@@ -246,6 +246,14 @@ static DWORD WINAPI tj_present_thread(LPVOID)
                               fprintf(stderr, "[TJ] faking loading progress 0x5F7480 = 100 (#%u)\n", _fp);
                               *(uint32_t*)(vm_base + 0x5F7480u) = 0x00000064u;
                           }
+                      }
+                      /* Also sample the game's texture buffers (0x02400000 + 0x03E00000). */
+                      snprintf(path, sizeof(path), "%s/texbuf2.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          fwrite(vm_base + 0x02400000u, 1, 4096, f);
+                          fwrite(vm_base + 0x03E00000u, 1, 4096, f);
+                          fclose(f);
                       }
                       /* Also sample the texture buffer (0x40100000, 4KB). */
                       snprintf(path, sizeof(path), "%s/texbuf.raw", getenv("TJ_FBDUMP"));
