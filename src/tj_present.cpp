@@ -147,6 +147,22 @@ static DWORD WINAPI tj_present_thread(LPVOID)
                                   uint32_t c = (p & 0x00FFFFFFu) | 0xFF000000u;
                                   db[(540 + ty)*1280 + (120 + tx)] = c;
                               }
+                          /* the game's title textures (0x02400000 as RGBA8, 64x64). */
+                          for (int py = 0; py < 64; py++)
+                              for (int px = 0; px < 64; px++) {
+                                  uint32_t p = *(uint32_t*)(vm_base + 0x02400000ull + (size_t)(py*64+px)*4);
+                                  uint32_t c = (p & 0x00FFFFFFu) | 0xFF000000u;
+                                  db[(96 + py*3)*1280 + (700 + px*3)] = c;
+                                  db[(97 + py*3)*1280 + (700 + px*3)] = c;
+                              }
+                          /* the game's title textures (0x02500000 as RGBA8, 64x64). */
+                          for (int py = 0; py < 64; py++)
+                              for (int px = 0; px < 64; px++) {
+                                  uint32_t p = *(uint32_t*)(vm_base + 0x02500000ull + (size_t)(py*64+px)*4);
+                                  uint32_t c = (p & 0x00FFFFFFu) | 0xFF000000u;
+                                  db[(96 + py*3)*1280 + (920 + px*3)] = c;
+                                  db[(97 + py*3)*1280 + (920 + px*3)] = c;
+                              }
                           /* the game's REAL texture buffer (0x02400000, 64x64) as the progress */
                           for (int py = 0; py < 64; py++)
                               for (int px = 0; px < 64; px++) {
@@ -247,8 +263,18 @@ static DWORD WINAPI tj_present_thread(LPVOID)
                               *(uint32_t*)(vm_base + 0x5F7480u) = 0x00000064u;
                           }
                       }
+                      /* Also dump the 4 game texture buffers (2KB each). */
+                      snprintf(path, sizeof(path), "%s/tex4.raw", getenv("TJ_FBDUMP"));
+                      f = fopen(path, "wb");
+                      if (f) {
+                          fwrite(vm_base + 0x02400000u, 1, 2048, f);
+                          fwrite(vm_base + 0x03E00000u, 1, 2048, f);
+                          fwrite(vm_base + 0x02500000u, 1, 2048, f);
+                          fwrite(vm_base + 0x03F00000u, 1, 2048, f);
+                          fclose(f);
+                      }
                       /* Also sample the game's texture buffers (0x02400000 + 0x03E00000). */
-                      snprintf(path, sizeof(path), "%s/texbuf2.raw", getenv("TJ_FBDUMP"));
+                      snprintf(path, sizeof(path), "%s/texbuf2_%u.raw", getenv("TJ_FBDUMP"), _n);
                       f = fopen(path, "wb");
                       if (f) {
                           fwrite(vm_base + 0x02400000u, 1, 4096, f);
