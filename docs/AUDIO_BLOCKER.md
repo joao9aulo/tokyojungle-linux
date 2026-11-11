@@ -805,3 +805,12 @@ The extraction pass (writing the textures to 0x40100000) stalls after its
 259-byte header, meaning the per-texture decode waits on the game's own
 condition. The decode path is the next RE target; the port infrastructure is
 complete and stable (the boot, reads, SPU, fonts, and render loop all live).
+
+## Follow-up 60: THE EXTRACTION IS WORKING -- in 0x02400000
+
+The game decodes its textures into 0x02400000 (its own texture buffer):
+3343/4096 non-zero bytes -- the extraction pass IS active! The 0x40100000
+buffer (259 bytes) is the pack's header/index area, not the textures. The
+game's title textures are being decoded; the boot is progressing on its own
+pace. Next: watch the game's texture upload (the DMA/copy from 0x02400000
+to the VRAM) and the title screen's render.
