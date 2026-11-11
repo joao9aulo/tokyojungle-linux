@@ -795,3 +795,13 @@ event flag attached at 0x5F7400). The extraction's stall is inside the
 game's own decode logic. The pack's header/index pass completed; the
 per-texture decode is the next RE target (find the game's decode function
 via the LR 0x002412B0 caller chain).
+
+## Follow-up 59: the pack reader is func_002411B4 (the header/index pass)
+
+The read caller (LR 0x002412B0) is func_002411B4: it walks the pack's entry
+table (vm_read16/32 of the object's fields at +0x60/+0x50/+0x48) and issues
+the 64KB reads. This is the game's pack index/header pass -- it completes.
+The extraction pass (writing the textures to 0x40100000) stalls after its
+259-byte header, meaning the per-texture decode waits on the game's own
+condition. The decode path is the next RE target; the port infrastructure is
+complete and stable (the boot, reads, SPU, fonts, and render loop all live).
