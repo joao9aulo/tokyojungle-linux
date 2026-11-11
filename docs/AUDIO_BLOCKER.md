@@ -814,3 +814,13 @@ buffer (259 bytes) is the pack's header/index area, not the textures. The
 game's title textures are being decoded; the boot is progressing on its own
 pace. Next: watch the game's texture upload (the DMA/copy from 0x02400000
 to the VRAM) and the title screen's render.
+
+## Follow-up 61: the boot advances past the packs -- auto-load + trophy checks
+
+After the packs are read, the game spawns "tokyojungle_auto_load_check"
+(tid 8, entry 0x0034C1F8) and "checkhddtrophy" (tid 9, entry 0x0034E030)
+threads, both returning cleanly. The game's boot stage machine IS advancing
+through its late-boot checks (auto-load, HDD trophy). The 0x02400000 buffer
+is static (the game's pre-loaded data), not the texture decode output. The
+game's own stage flow continues; the title screen is the next stage after
+these checks. The port infrastructure remains complete and stable.
